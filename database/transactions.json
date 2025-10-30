@@ -12,7 +12,7 @@
       "paidAmount": 250.11
     },
     {
-      "id": "122071c0a43ec72a715f29d42d375ca817b587533f2b61d1439d319c8a83abfe4613:1",
+      "id": "122071c0a43ec72a715f29d42d375ca817b587533f2b61d1439d319c8a83abfe4619:8",
       "walletAddress": "bron::1220def456789abcdef0123456789abcdef0123456789abcdef012345",
       "type": "WITHDRAWAL",
       "amount": 500.0,
@@ -88,6 +88,19 @@
       "toAddress": "bron::1220cold-storage-address-123456789012345678901234567",
       "fromAddress": "bron::1220ghi012345678901234567890123456789012345678901234567"
     }
+  ],
+  "daily_purchase_limits": [
+    {
+      "wallet_address": "bron::1220def456789abcdef0123456789abcdef0123456789abcdef012345",
+      "purchase_date": "2025-10-30",
+      "total_cc_purchased": 1250.5678,
+      "remaining_limit": 8749.4322
+    },
+    {
+      "wallet_address": "bron::122067a3096266f3cbb9320eeacf64bd5bec8de8f94c1ae605fda3218d3424a16da3",
+      "purchase_date": "2025-10-30",
+      "total_cc_purchased": 0,
+      "remaining_limit": 10000
+    }
   ]
 }
-

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -15,7 +18,7 @@ export async function GET(request: Request) {
     }
     
     // Read the JSON database file
-    const dbPath = join(process.cwd(), '..', 'database', 'transactions.json')
+    const dbPath = join(process.cwd(), 'database', 'transactions.json')
     const dbData = readFileSync(dbPath, 'utf-8')
     const db = JSON.parse(dbData)
     
@@ -61,7 +64,4 @@ export async function GET(request: Request) {
     }, { status: 500 })
   }
 }
-
-// Enable ISR (Incremental Static Regeneration) - revalidate every 10 seconds
-export const revalidate = 10
 

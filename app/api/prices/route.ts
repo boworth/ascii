@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getCCPrice, getBRONPrice, getETHPrice } from '@/lib/redis'
 
+// Force dynamic rendering - don't try to statically generate this API route
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET() {
   try {
     const [ccPrice, bronPrice, ethPrice] = await Promise.all([
@@ -28,7 +32,4 @@ export async function GET() {
     }, { status: 200 }) // Still return 200 with fallback data
   }
 }
-
-// Enable ISR (Incremental Static Regeneration) - revalidate every 5 seconds
-export const revalidate = 5
 
