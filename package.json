@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
+    "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
