@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { authenticateUser, createSession } from '@/lib/auth'
+import { authenticateUser, createSession } from '@/lib/authSupabase'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -40,8 +40,7 @@ export async function POST(request: Request) {
       success: true,
       user: {
         id: user.id,
-        username: user.username,
-        email: user.email
+        username: user.username
       }
     })
   } catch (error) {

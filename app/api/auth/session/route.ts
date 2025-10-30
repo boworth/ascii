@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/authSupabase'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'

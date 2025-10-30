@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { getServiceRoleClient } from '@/lib/supabase'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
+
+const DAILY_LIMIT = 10000 // CC
 
 export async function GET(request: Request) {
   try {
@@ -17,28 +18,48 @@ export async function GET(request: Request) {
       )
     }
     
-    // Read the JSON database file
-    const dbPath = join(process.cwd(), 'database', 'transactions.json')
-    const dbData = readFileSync(dbPath, 'utf-8')
-    const db = JSON.parse(dbData)
+    const supabase = getServiceRoleClient()
     
-    // Get today's date in YYYY-MM-DD format
-    // For demo purposes, we use 2025-10-30 as "today" to match the JSON database
-    // In production, this would be: new Date().toISOString().split('T')[0]
-    const today = '2025-10-30'
+    // Get wallet ID from address
+    const { data: walletData, error: walletError } = await supabase
+      .from('wallets')
+      .select('id')
+      .eq('address', wallet)
+      .single()
     
-    // Find today's purchase limit for this wallet
-    const todayLimit = db.daily_purchase_limits.find(
-      (limit: any) => limit.wallet_address === wallet && limit.purchase_date === today
-    )
-    
-    if (todayLimit) {
+    if (walletError || !walletData) {
+      // Wallet not found, return default
       return NextResponse.json({
         wallet_address: wallet,
-        purchase_date: todayLimit.purchase_date,
-        total_cc_purchased: todayLimit.total_cc_purchased,
-        remaining_limit: todayLimit.remaining_limit,
-        daily_limit: 10000
+        purchase_date: new Date().toISOString().split('T')[0],
+        total_cc_purchased: 0,
+        remaining_limit: DAILY_LIMIT,
+        daily_limit: DAILY_LIMIT
+      })
+    }
+    
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Find today's purchase limit for this wallet
+    const { data: limitData, error: limitError } = await supabase
+      .from('daily_purchase_limits')
+      .select('*')
+      .eq('wallet_id', walletData.id)
+      .eq('purchase_date', today)
+      .single()
+    
+    if (limitError && limitError.code !== 'PGRST116') { // PGRST116 = no rows
+      console.error('Error fetching daily limit:', limitError)
+    }
+    
+    if (limitData) {
+      return NextResponse.json({
+        wallet_address: wallet,
+        purchase_date: limitData.purchase_date,
+        total_cc_purchased: parseFloat(limitData.total_cc_purchased),
+        remaining_limit: parseFloat(limitData.daily_limit) - parseFloat(limitData.total_cc_purchased),
+        daily_limit: parseFloat(limitData.daily_limit)
       })
     } else {
       // No purchases today yet
@@ -46,8 +67,8 @@ export async function GET(request: Request) {
         wallet_address: wallet,
         purchase_date: today,
         total_cc_purchased: 0,
-        remaining_limit: 10000,
-        daily_limit: 10000
+        remaining_limit: DAILY_LIMIT,
+        daily_limit: DAILY_LIMIT
       })
     }
   } catch (error) {
@@ -58,10 +79,9 @@ export async function GET(request: Request) {
       wallet_address: '',
       purchase_date: new Date().toISOString().split('T')[0],
       total_cc_purchased: 0,
-      remaining_limit: 10000,
-      daily_limit: 10000,
+      remaining_limit: DAILY_LIMIT,
+      daily_limit: DAILY_LIMIT,
       error: 'Failed to fetch daily limit'
     }, { status: 500 })
   }
 }
-

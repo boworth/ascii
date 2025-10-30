@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { deleteSession } from '@/lib/auth'
+import { deleteSession } from '@/lib/authSupabase'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'

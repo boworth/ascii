@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { getServiceRoleClient } from '@/lib/supabase'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -17,33 +16,55 @@ export async function GET(request: Request) {
       )
     }
     
-    // Read the JSON database file
-    const dbPath = join(process.cwd(), 'database', 'transactions.json')
-    const dbData = readFileSync(dbPath, 'utf-8')
-    const db = JSON.parse(dbData)
+    const supabase = getServiceRoleClient()
     
-    // Filter transactions for the specified wallet
-    const transactions = db.transactions
-      .filter((tx: any) => tx.wallet_address === wallet)
-      .sort((a: any, b: any) => {
-        // Sort by timestamp descending (newest first)
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    // Get wallet ID from address
+    const { data: walletData, error: walletError } = await supabase
+      .from('wallets')
+      .select('id')
+      .eq('address', wallet)
+      .single()
+    
+    if (walletError || !walletData) {
+      return NextResponse.json({
+        wallet_address: wallet,
+        transactions: [],
+        count: 0
       })
-      .slice(0, 50) // Limit to 50 transactions
-      .map((tx: any) => ({
-        // Transform snake_case to camelCase for frontend
-        id: tx.id,
-        walletAddress: tx.wallet_address,
-        type: tx.type,
-        amount: tx.amount,
-        usdValue: tx.usd_value,
-        timestamp: tx.timestamp,
-        status: tx.status,
-        toAddress: tx.to_address,
-        fromAddress: tx.from_address,
-        paidWith: tx.paid_with,
-        paidAmount: tx.paid_amount
-      }))
+    }
+    
+    // Get transactions for this wallet
+    const { data: txData, error: txError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('wallet_id', walletData.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    
+    if (txError) {
+      console.error('Error fetching transactions:', txError)
+      return NextResponse.json({
+        wallet_address: wallet,
+        transactions: [],
+        count: 0,
+        error: 'Failed to fetch transactions'
+      }, { status: 500 })
+    }
+    
+    // Transform to frontend format
+    const transactions = (txData || []).map((tx: any) => ({
+      id: tx.transaction_hash || tx.id,
+      walletAddress: wallet,
+      type: tx.type,
+      amount: parseFloat(tx.amount),
+      usdValue: tx.usd_value ? parseFloat(tx.usd_value) : null,
+      timestamp: tx.created_at,
+      status: tx.status,
+      toAddress: tx.to_address,
+      fromAddress: tx.from_address,
+      paidWith: tx.paid_with,
+      paidAmount: tx.paid_amount ? parseFloat(tx.paid_amount) : null
+    }))
     
     return NextResponse.json({
       wallet_address: wallet,
@@ -62,4 +83,3 @@ export async function GET(request: Request) {
     }, { status: 500 })
   }
 }
-
