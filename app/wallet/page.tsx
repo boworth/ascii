@@ -87,7 +87,7 @@ function WalletPageContent() {
       {/* Theme Toggle Button - Bottom Right */}
       <button
         onClick={toggleTheme}
-        className={`fixed bottom-8 right-8 z-10 p-3 rounded-full transition-all duration-300 shadow-lg ${
+        className={`fixed bottom-8 right-8 z-50 p-4 rounded-full transition-all duration-300 shadow-lg ${
           theme === 'dark' 
             ? 'bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300' 
             : 'bg-white hover:bg-gray-100 text-gray-700'
@@ -96,7 +96,7 @@ function WalletPageContent() {
       >
         {theme === 'dark' ? (
           // Sun icon
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -109,7 +109,7 @@ function WalletPageContent() {
           </svg>
         ) : (
           // Moon icon
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
         )}
@@ -260,7 +260,7 @@ function WalletPageContent() {
       <motion.div 
         className="flex-1 flex flex-col items-center justify-center"
         animate={{
-          y: activePanel ? -150 : 0
+          y: activePanel ? -20 : 0
         }}
         transition={{
           duration: 0.5,
@@ -287,10 +287,19 @@ function WalletPageContent() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-8 justify-center">
-            <button 
+          <div className="flex gap-8 justify-center items-center">
+            <motion.button
+              animate={{ 
+                x: activePanel === 'xfer' ? 110 : 0,
+                opacity: activePanel === 'buy' ? 0 : 1,
+                scale: activePanel === 'buy' ? 0.95 : 1
+              }}
+              transition={{ 
+                duration: 0.35, 
+                ease: [0.4, 0, 0.2, 1]
+              }}
               onClick={() => togglePanel('xfer')}
-              className={`px-16 py-6 font-bold text-2xl rounded-lg transition-all duration-300 ${
+              className={`px-16 py-6 font-bold text-2xl rounded-lg ${
                 activePanel === 'xfer'
                   ? theme === 'dark'
                     ? 'bg-[#4a4a4a] text-white ring-2 ring-white ring-opacity-50'
@@ -299,12 +308,23 @@ function WalletPageContent() {
                     ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
                     : 'bg-gray-400 hover:bg-gray-500 text-white'
               }`}
+              style={{ pointerEvents: activePanel === 'buy' ? 'none' : 'auto' }}
             >
               XFER
-            </button>
-            <button 
+            </motion.button>
+            
+            <motion.button
+              animate={{ 
+                x: activePanel === 'buy' ? -110 : 0,
+                opacity: activePanel === 'xfer' ? 0 : 1,
+                scale: activePanel === 'xfer' ? 0.95 : 1
+              }}
+              transition={{ 
+                duration: 0.35, 
+                ease: [0.4, 0, 0.2, 1]
+              }}
               onClick={() => togglePanel('buy')}
-              className={`px-16 py-6 font-bold text-2xl rounded-lg transition-all duration-300 ${
+              className={`px-16 py-6 font-bold text-2xl rounded-lg ${
                 activePanel === 'buy'
                   ? theme === 'dark'
                     ? 'bg-[#4a4a4a] text-white ring-2 ring-white ring-opacity-50'
@@ -313,9 +333,10 @@ function WalletPageContent() {
                     ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
                     : 'bg-gray-400 hover:bg-gray-500 text-white'
               }`}
+              style={{ pointerEvents: activePanel === 'xfer' ? 'none' : 'auto' }}
             >
               BUY
-            </button>
+            </motion.button>
           </div>
         </div>
 

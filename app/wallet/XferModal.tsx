@@ -138,31 +138,13 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
 
   return (
     <div className="w-full px-8">
-      <div className={`w-full max-w-3xl mx-auto border-t-2 pt-8 ${
-        theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
-      }`}>
-        {/* Header */}
-        <div className={`flex items-center justify-between p-6 border-b ${
-          theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
-        }`}>
-          <h2 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>Transfer CC</h2>
-          <button 
-            onClick={onClose}
-            className={`transition-colors ${theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'}`}
-          >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        
+      <div className="w-full max-w-3xl mx-auto pt-6">
         {/* Content */}
-        <div className="p-6">
+        <div className="px-6 pb-6">
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>To Address</label>
+                <label className={`block text-xs font-bold ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>address</label>
                 <button
                   onClick={() => setShowAddressBook(!showAddressBook)}
                   className={`text-sm transition-colors flex items-center gap-1 ${
@@ -181,25 +163,25 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                 placeholder="bron::..." 
                 value={toAddress}
                 onChange={(e) => setToAddress(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all rounded-lg ${
                   theme === 'dark' 
-                    ? 'border-[#3a3a3a] focus:ring-[#4a4a4a] bg-[#1a1a1a] text-white placeholder-gray-500'
-                    : 'border-gray-300 focus:ring-gray-400 bg-white'
+                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-gray-600'
+                    : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
                 }`}
               />
             </div>
 
             <div>
-              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>Amount (CC)</label>
+              <label className={`block text-xs font-bold mb-2 ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>amount</label>
               <input 
                 type="number" 
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
+                className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all text-xl rounded-lg ${
                   theme === 'dark' 
-                    ? 'border-[#3a3a3a] focus:ring-[#4a4a4a] bg-[#1a1a1a] text-white placeholder-gray-500'
-                    : 'border-gray-300 focus:ring-gray-400 bg-white'
+                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-gray-600'
+                    : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
                 }`}
               />
               
