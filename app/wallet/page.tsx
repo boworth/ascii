@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import TransactionHistory from "./TransactionHistory"
 import XferModal from "./XferModal"
 import BuyModal from "./BuyModal"
@@ -10,6 +11,8 @@ import { ThemeProvider, useTheme } from "./ThemeContext"
 
 const MAX_WALLETS = 10 // Maximum wallets per user
 
+type ActivePanel = null | 'xfer' | 'buy'
+
 function WalletPageContent() {
   const { wallets, selectedWalletIndex, setSelectedWalletIndex, currentWallet, addWallet, fdv } = useWallet()
   const { theme, toggleTheme } = useTheme()
@@ -17,8 +20,7 @@ function WalletPageContent() {
   const [showCreateWallet, setShowCreateWallet] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
-  const [showXfer, setShowXfer] = useState(false)
-  const [showBuy, setShowBuy] = useState(false)
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null)
   
   const displayAddress = `...${currentWallet.address.slice(-4)}`
   const canCreateWallet = wallets.length < MAX_WALLETS
@@ -71,10 +73,15 @@ function WalletPageContent() {
     }
     
     addWallet(newWallet)
+    setShowCreateWallet(false)
+  }
+
+  const togglePanel = (panel: 'xfer' | 'buy') => {
+    setActivePanel(activePanel === panel ? null : panel)
   }
 
   return (
-    <main className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 ${
+    <main className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden ${
       theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-200'
     }`}>
       {/* Theme Toggle Button - Bottom Right */}
@@ -109,7 +116,7 @@ function WalletPageContent() {
       </button>
       
       {/* Header - Ascii on left, Txn history on right */}
-      <div className="absolute top-8 left-8 right-8 flex justify-between items-start">
+      <div className="absolute top-8 left-8 right-8 flex justify-between items-start z-20">
         <div className="flex flex-col">
           <h1 className={`text-7xl font-bold transition-colors ${
             theme === 'dark' ? 'text-white' : 'text-black'
@@ -249,48 +256,98 @@ function WalletPageContent() {
         </button>
       </div>
 
-      {/* Center - Wallet Balance Card */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <h2 className={`text-8xl font-bold mb-12 transition-colors ${
-          theme === 'dark' ? 'text-white' : 'text-black'
-        }`}>Wallet Balance</h2>
-        
-        <div className="text-center mb-16">
-          <p className={`text-7xl transition-colors ${
-            theme === 'dark' ? 'text-[#ccc]' : 'text-gray-600'
-          }`}>
-            {currentWallet.balance.cc.toFixed(4)} CC
-          </p>
-          <p className={`text-5xl mt-2 transition-colors ${
-            theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
-          }`}>
-            ${currentWallet.balance.usd.toFixed(2)}
-          </p>
+      {/* Main Content Container - Animates vertically */}
+      <motion.div 
+        className="flex-1 flex flex-col items-center justify-center"
+        animate={{
+          y: activePanel ? -150 : 0
+        }}
+        transition={{
+          duration: 0.5,
+          ease: [0.25, 0.1, 0.25, 1]
+        }}
+      >
+        {/* Wallet Balance Section */}
+        <div className="text-center mb-8">
+          <h2 className={`text-8xl font-bold mb-12 transition-colors ${
+            theme === 'dark' ? 'text-white' : 'text-black'
+          }`}>Wallet Balance</h2>
+          
+          <div className="mb-12">
+            <p className={`text-7xl transition-colors ${
+              theme === 'dark' ? 'text-[#ccc]' : 'text-gray-600'
+            }`}>
+              {currentWallet.balance.cc.toFixed(4)} CC
+            </p>
+            <p className={`text-5xl mt-2 transition-colors ${
+              theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
+            }`}>
+              ${currentWallet.balance.usd.toFixed(2)}
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-8 justify-center">
+            <button 
+              onClick={() => togglePanel('xfer')}
+              className={`px-16 py-6 font-bold text-2xl rounded-lg transition-all duration-300 ${
+                activePanel === 'xfer'
+                  ? theme === 'dark'
+                    ? 'bg-[#4a4a4a] text-white ring-2 ring-white ring-opacity-50'
+                    : 'bg-gray-500 text-white ring-2 ring-gray-700 ring-opacity-30'
+                  : theme === 'dark' 
+                    ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
+                    : 'bg-gray-400 hover:bg-gray-500 text-white'
+              }`}
+            >
+              XFER
+            </button>
+            <button 
+              onClick={() => togglePanel('buy')}
+              className={`px-16 py-6 font-bold text-2xl rounded-lg transition-all duration-300 ${
+                activePanel === 'buy'
+                  ? theme === 'dark'
+                    ? 'bg-[#4a4a4a] text-white ring-2 ring-white ring-opacity-50'
+                    : 'bg-gray-500 text-white ring-2 ring-gray-700 ring-opacity-30'
+                  : theme === 'dark' 
+                    ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
+                    : 'bg-gray-400 hover:bg-gray-500 text-white'
+              }`}
+            >
+              BUY
+            </button>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-8">
-          <button 
-            onClick={() => setShowXfer(true)}
-            className={`px-16 py-6 text-white font-bold text-2xl rounded-lg transition-colors ${
-              theme === 'dark' ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a]' : 'bg-gray-400 hover:bg-gray-500'
-            }`}
-          >
-            XFER
-          </button>
-          <button 
-            onClick={() => setShowBuy(true)}
-            className={`px-16 py-6 text-white font-bold text-2xl rounded-lg transition-colors ${
-              theme === 'dark' ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a]' : 'bg-gray-400 hover:bg-gray-500'
-            }`}
-          >
-            BUY
-          </button>
-        </div>
-      </div>
+        {/* Expanding Panels Container */}
+        <AnimatePresence mode="wait">
+          {activePanel && (
+            <motion.div
+              key={activePanel}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.25, 0.1, 0.25, 1]
+              }}
+              className="w-full max-w-4xl overflow-hidden"
+            >
+              <div className="pt-8 pb-12">
+                {activePanel === 'xfer' && (
+                  <XferModal isOpen={true} onClose={() => setActivePanel(null)} />
+                )}
+                {activePanel === 'buy' && (
+                  <BuyModal isOpen={true} onClose={() => setActivePanel(null)} />
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Bottom - FDV */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center z-10">
         <p className={`text-2xl transition-colors ${
           theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
         }`}>
@@ -298,22 +355,20 @@ function WalletPageContent() {
         </p>
       </div>
 
-      {/* Backdrop */}
+      {/* Transaction History Sidebar */}
+      <TransactionHistory isOpen={showTransactions} onClose={() => setShowTransactions(false)} />
+      
+      {/* Create Wallet Modal */}
+      <CreateWalletModal isOpen={showCreateWallet} onClose={() => setShowCreateWallet(false)} onCreate={handleCreateWallet} />
+      
+      {/* Backdrop for Transaction History and Create Wallet */}
       <div 
-        className={`fixed inset-0 bg-black z-40 transition-opacity duration-500 ${showTransactions || showXfer || showBuy || showCreateWallet ? 'opacity-30' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-black z-40 transition-opacity duration-500 ${showTransactions || showCreateWallet ? 'opacity-30' : 'opacity-0 pointer-events-none'}`}
         onClick={() => {
           setShowTransactions(false)
-          setShowXfer(false)
-          setShowBuy(false)
           setShowCreateWallet(false)
         }}
       />
-
-      {/* Modals */}
-      <TransactionHistory isOpen={showTransactions} onClose={() => setShowTransactions(false)} />
-      <XferModal isOpen={showXfer} onClose={() => setShowXfer(false)} />
-      <BuyModal isOpen={showBuy} onClose={() => setShowBuy(false)} />
-      <CreateWalletModal isOpen={showCreateWallet} onClose={() => setShowCreateWallet(false)} onCreate={handleCreateWallet} />
     </main>
   )
 }
@@ -327,4 +382,3 @@ export default function WalletPage() {
     </ThemeProvider>
   )
 }
-

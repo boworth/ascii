@@ -137,10 +137,10 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   }
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className={`shadow-2xl rounded-3xl w-full max-w-2xl mx-4 transform transition-all duration-300 ${
-        theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-200'
-      } ${isOpen ? 'scale-100' : 'scale-95'}`}>
+    <div className="w-full px-8">
+      <div className={`w-full max-w-3xl mx-auto border-t-2 pt-8 ${
+        theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
+      }`}>
         {/* Header */}
         <div className={`flex items-center justify-between p-6 border-b ${
           theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
@@ -266,7 +266,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
           {/* Address Book Modal */}
           <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none">
             <div className={`shadow-2xl rounded-3xl w-full max-w-lg mx-4 pointer-events-auto transform transition-all duration-300 scale-100 ${
-              theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-200'
+              theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-white'
             }`}>
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
