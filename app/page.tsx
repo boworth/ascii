@@ -121,7 +121,16 @@ export default function Home() {
         className="w-full h-[200vh]"
         initial={{ y: 0 }}
         animate={isScrolling ? { y: "-100vh" } : { y: 0 }}
-        transition={{ duration: 2.5, ease: "easeInOut" }}
+        transition={{ 
+          duration: 2.0,
+          ease: [0.33, 1, 0.68, 1], // easeOutCubic - smooth deceleration
+          type: "tween"
+        }}
+        style={{ 
+          backfaceVisibility: "hidden", 
+          transform: "translateZ(0)",
+          willChange: isScrolling ? "transform" : "auto"
+        }}
         onAnimationComplete={() => {
           if (isScrolling) {
             handleScrollComplete()
@@ -134,8 +143,9 @@ export default function Home() {
           <motion.div
             className="absolute inset-0"
             initial={{ opacity: 0 }}
-            animate={!isLoading ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.5 }}
+            animate={!isLoading ? { opacity: isScrolling ? 0 : 1 } : { opacity: 0 }}
+            transition={{ duration: isScrolling ? 0.3 : 0.5 }}
+            style={{ display: isScrolling ? 'none' : 'block' }}
           >
             <NeonIsometricMaze 
               onGlitchComplete={handleGlitchComplete} 
@@ -181,16 +191,13 @@ export default function Home() {
         </div>
 
         {/* Wallet Page Section - Transition to actual wallet */}
-        <motion.div 
-          className="w-screen h-screen relative flex items-center justify-center"
-          initial={{ backgroundColor: "#ffffff" }}
-          animate={isScrolling ? { backgroundColor: "#e5e7eb" } : { backgroundColor: "#ffffff" }}
-          transition={{ duration: 1.5, ease: "easeInOut", delay: 0.3 }}
+        <div 
+          className="w-screen h-screen relative flex items-center justify-center bg-gray-200"
         >
           <motion.div
             initial={{ opacity: 0 }}
             animate={isScrolling ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1, delay: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
             className="text-center"
           >
             <div className="text-8xl font-bold text-black flex justify-center font-mono">
@@ -235,7 +242,7 @@ export default function Home() {
               </motion.span>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   )

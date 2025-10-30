@@ -30,6 +30,9 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined)
 const CC_TOTAL_SUPPLY = 32889473226.7744
 
 function formatFDV(fdvValue: number): string {
+  if (fdvValue === 0) {
+    return "0.00"
+  }
   if (fdvValue >= 1e9) {
     return `${(fdvValue / 1e9).toFixed(2)}bn`
   } else if (fdvValue >= 1e6) {
@@ -41,10 +44,10 @@ function formatFDV(fdvValue: number): string {
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [ccPrice, setCCPrice] = useState(0.1596) // Default fallback
-  const [bronPrice, setBRONPrice] = useState(0.07) // Default fallback
-  const [ethPrice, setETHPrice] = useState(2500) // Default fallback
-  const [fdv, setFdv] = useState("6.62bn") // Will be calculated from price
+  const [ccPrice, setCCPrice] = useState(0) // Start at 0 until real price loads
+  const [bronPrice, setBRONPrice] = useState(0) // Start at 0 until real price loads
+  const [ethPrice, setETHPrice] = useState(0) // Start at 0 until real price loads
+  const [fdv, setFdv] = useState("0.00") // Will be calculated from price
   
   const [wallets, setWallets] = useState<Wallet[]>([
     {
@@ -106,22 +109,20 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   
   // Calculate USD values and FDV when price changes
   useEffect(() => {
-    if (ccPrice > 0) {
-      // Update wallet USD values
-      setWallets(prevWallets => 
-        prevWallets.map(wallet => ({
-          ...wallet,
-          balance: {
-            ...wallet.balance,
-            usd: wallet.balance.cc * ccPrice
-          }
-        }))
-      )
-      
-      // Calculate and format FDV
-      const fdvValue = CC_TOTAL_SUPPLY * ccPrice
-      setFdv(formatFDV(fdvValue))
-    }
+    // Update wallet USD values
+    setWallets(prevWallets => 
+      prevWallets.map(wallet => ({
+        ...wallet,
+        balance: {
+          ...wallet.balance,
+          usd: wallet.balance.cc * ccPrice
+        }
+      }))
+    )
+    
+    // Calculate and format FDV
+    const fdvValue = CC_TOTAL_SUPPLY * ccPrice
+    setFdv(formatFDV(fdvValue))
   }, [ccPrice])
 
   const addWallet = (wallet: Wallet) => {

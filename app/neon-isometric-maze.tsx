@@ -3,6 +3,7 @@
 import type React from "react"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 
 interface GlitchCell {
   isInfected: boolean
@@ -557,59 +558,71 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                 </button>
               </div>
             ) : (
-              <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96 animate-scale-in">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value)
-                        if (loginError) setLoginError("")
-                      }}
-                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                      }`}
-                      placeholder="Username"
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value)
-                        if (loginError) setLoginError("")
-                      }}
-                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                      }`}
-                      placeholder="Password"
-                    />
-                  </div>
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowLoginModal(false)
-                        setLoginError("")
-                        setUsername("")
-                        setPassword("")
-                      }}
-                      className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-black transition-all duration-200 font-sans"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 font-sans"
-                    >
-                      Login
-                    </button>
-                  </div>
-                </form>
-              </div>
+              <AnimatePresence>
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    ease: [0.16, 1, 0.3, 1], // Subtle, smooth easing without bounce
+                    type: "tween"
+                  }}
+                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96"
+                >
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value)
+                          if (loginError) setLoginError("")
+                        }}
+                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                        }`}
+                        placeholder="Username"
+                        autoFocus
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value)
+                          if (loginError) setLoginError("")
+                        }}
+                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                        }`}
+                        placeholder="Password"
+                      />
+                    </div>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowLoginModal(false)
+                          setLoginError("")
+                          setUsername("")
+                          setPassword("")
+                        }}
+                        className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-black transition-all duration-200 font-sans"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 font-sans"
+                      >
+                        Login
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </AnimatePresence>
             )}
           </div>
         </div>
@@ -627,33 +640,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           line-height: 1;
         }
 
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes scale-in {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
-        }
         
         .password-container {
           display: flex;
