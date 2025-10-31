@@ -4,6 +4,7 @@ import type React from "react"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import RegistrationModal from "./RegistrationModal"
 
 interface GlitchCell {
   isInfected: boolean
@@ -34,6 +35,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const [isCollapsing, setIsCollapsing] = useState(false)
   const [showButtons, setShowButtons] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
@@ -66,8 +68,13 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   }, [])
 
   const handleCreateWalletClick = useCallback(() => {
-    // For now, treat create wallet the same as login
-    setShowLoginModal(true)
+    setShowRegisterModal(true)
+  }, [])
+
+  const handleRegistrationSuccess = useCallback(() => {
+    setShowRegisterModal(false)
+    // Show a message or redirect to login
+    // For now, just close the modal - user will need to verify email first
   }, [])
 
   const startGlitchAnimation = useCallback(() => {
@@ -542,7 +549,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               <p className="text-white text-2xl mb-8 font-sans">Worlds First Canton On Ramp</p>
             )}
             
-            {!showLoginModal ? (
+            {!showLoginModal && !showRegisterModal ? (
               <div className="flex gap-6 justify-center">
                 <button
                   onClick={handleLoginClick}
@@ -557,7 +564,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                   Create Wallet
                 </button>
               </div>
-            ) : (
+            ) : showLoginModal ? (
               <AnimatePresence>
                 <motion.div
                   initial={{ scale: 0.95, opacity: 0 }}
@@ -623,7 +630,13 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                   </form>
                 </motion.div>
               </AnimatePresence>
-            )}
+            ) : showRegisterModal ? (
+              <RegistrationModal
+                isOpen={showRegisterModal}
+                onClose={() => setShowRegisterModal(false)}
+                onSuccess={handleRegistrationSuccess}
+              />
+            ) : null}
           </div>
         </div>
       )}
