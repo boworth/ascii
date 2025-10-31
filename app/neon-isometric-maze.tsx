@@ -543,7 +543,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         crossOrigin="anonymous"
       />
       {showButtons && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-full max-w-7xl px-8">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-7xl px-8">
           <div className="flex items-center justify-center gap-16">
             {/* Left side - Title and Buttons */}
             <motion.div 
