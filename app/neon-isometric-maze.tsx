@@ -590,7 +590,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                     ease: [0.16, 1, 0.3, 1],
                     type: "tween"
                   }}
-                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-full max-w-lg"
+                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-[32rem]"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white">Login</h2>
@@ -618,9 +618,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                       </div>
                     )}
                     <div>
-                      <label className="block text-white text-sm font-medium mb-2">
-                        Username
-                      </label>
                       <input
                         type="text"
                         value={username}
@@ -636,9 +633,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                       />
                     </div>
                     <div>
-                      <label className="block text-white text-sm font-medium mb-2">
-                        Password
-                      </label>
                       <input
                         type="password"
                         value={password}
