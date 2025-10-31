@@ -625,85 +625,88 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                     Create Wallet
                   </button>
                 </motion.div>
-              ) : showLoginModal ? (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key="login"
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  transition={{
-                    duration: 0.3,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-[32rem]"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white">Login</h2>
-                    <button
-                      onClick={() => {
-                        setShowLoginModal(false)
-                        setLoginError("")
-                        setUsername("")
-                        setPassword("")
-                      }}
-                      className="text-white hover:text-gray-300 transition-colors"
-                      type="button"
-                    >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    {loginError && (
-                      <div className="bg-red-500 bg-opacity-20 border border-red-400 text-red-100 px-4 py-3 rounded-lg text-sm">
-                        {loginError}
-                      </div>
-                    )}
-                    <div>
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => {
-                          setUsername(e.target.value)
-                          if (loginError) setLoginError("")
-                        }}
-                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                        }`}
-                        placeholder="Username"
-                        autoFocus
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value)
-                          if (loginError) setLoginError("")
-                        }}
-                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                        }`}
-                        placeholder="Password"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full py-3 bg-white text-black font-bold rounded-lg transition-all duration-200 hover:bg-opacity-90"
-                    >
-                      Login
-                    </button>
-                  </form>
-                </motion.div>
-              </AnimatePresence>
               ) : null}
             </AnimatePresence>
           </motion.div>
+
+          {/* Login Modal - positioned absolutely to slide in */}
+          {showLoginModal && (
+            <motion.div
+              className="absolute"
+              style={{ left: 'calc(50% + 200px)' }}
+              initial={{ x: 400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 400, opacity: 0 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+            >
+              <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-[32rem]">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white">Login</h2>
+                  <button
+                    onClick={() => {
+                      setShowLoginModal(false)
+                      setLoginError("")
+                      setUsername("")
+                      setPassword("")
+                    }}
+                    className="text-white hover:text-gray-300 transition-colors"
+                    type="button"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+                
+                <form onSubmit={handleLogin} className="space-y-4">
+                  {loginError && (
+                    <div className="bg-red-500 bg-opacity-20 border border-red-400 text-red-100 px-4 py-3 rounded-lg text-sm">
+                      {loginError}
+                    </div>
+                  )}
+                  <div>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value)
+                        if (loginError) setLoginError("")
+                      }}
+                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                      }`}
+                      placeholder="Username"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        if (loginError) setLoginError("")
+                      }}
+                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                      }`}
+                      placeholder="Password"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-white text-black font-bold rounded-lg transition-all duration-200 hover:bg-opacity-90"
+                  >
+                    Login
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          )}
 
           {/* Registration Modal - positioned absolutely to slide in */}
           {showRegisterModal && (
