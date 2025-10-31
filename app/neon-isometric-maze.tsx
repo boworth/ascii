@@ -543,11 +543,18 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         crossOrigin="anonymous"
       />
       {showButtons && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 w-full px-8">
-          <div className="flex items-center justify-center gap-12">
-            {/* Left side - Title and Buttons */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40">
+          {/* Center point container - always centered */}
+          <div className="relative">
+            {/* Left side - Title and Buttons (centered by default, slides left when modal opens) */}
             <motion.div 
-              className={`button-container ${isCollapsing ? "collapsing" : ""} flex-shrink-0 text-center`}
+              className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)'
+              }}
               animate={{
                 x: showRegisterModal ? -300 : 0
               }}
@@ -581,7 +588,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                   </button>
                 </div>
               ) : showLoginModal ? (
-                <AnimatePresence>
+                <AnimatePresence mode="wait">
                   <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -649,18 +656,23 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               ) : null}
             </motion.div>
 
-            {/* Right side - Registration Modal */}
+            {/* Right side - Registration Modal (slides in from right) */}
             <AnimatePresence mode="wait">
               {showRegisterModal && (
                 <motion.div
-                  initial={{ x: 400, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 400, opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  initial={{ x: 600, opacity: 0 }}
+                  animate={{ x: 300, opacity: 1 }}
+                  exit={{ x: 600, opacity: 0 }}
                   transition={{
                     duration: 0.5,
                     ease: [0.4, 0, 0.2, 1]
                   }}
-                  className="flex-shrink-0 flex items-center justify-center"
                 >
                   <RegistrationModal
                     isOpen={showRegisterModal}
