@@ -39,6 +39,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
+  const [isTitleAnimating, setIsTitleAnimating] = useState(false)
 
   // Pre-define character arrays to avoid recreating them
   const glitchSequenceChars = ["+", "=", "-", ":", ".", " "]
@@ -51,17 +52,24 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     // Simple test credentials for now
     if (username === "test" && password === "test") {
       setLoginError("")
+      setShowLoginModal(false)
       setShowButtons(false)
       setIsCollapsing(true)
-      onButtonClick()
       
+      // Start title animation
       setTimeout(() => {
+        setIsTitleAnimating(true)
+      }, 300)
+      
+      // Then start glitch animation after title grows
+      setTimeout(() => {
+        onButtonClick()
         startGlitchAnimation()
-      }, 500)
+      }, 2000)
     } else {
       setLoginError("Invalid username or password")
     }
-  }, [username, password, onButtonClick])
+  }, [username, password, onButtonClick, startGlitchAnimation])
 
   const handleLoginClick = useCallback(() => {
     setShowLoginModal(true)
@@ -556,9 +564,22 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             }}
           >
             {/* Ascii Title */}
-            <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-4">
+            <motion.h1 
+              className="font-bold leading-none whitespace-nowrap mb-4"
+              animate={{
+                scale: isTitleAnimating ? 1.5 : 1,
+                color: isTitleAnimating ? '#000000' : '#ffffff'
+              }}
+              transition={{
+                duration: 1.5,
+                ease: [0.43, 0.13, 0.23, 0.96]
+              }}
+              style={{
+                fontSize: 'clamp(4rem, 14vw, 14rem)'
+              }}
+            >
               Ascii
-            </h1>
+            </motion.h1>
             
             {/* Subtitle - animated */}
             <AnimatePresence mode="wait">
