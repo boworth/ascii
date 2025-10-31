@@ -567,7 +567,10 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                   initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                   animate={{ opacity: 1, height: 'auto', marginBottom: '1.5rem' }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ 
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1] 
+                  }}
                   className="text-white text-2xl font-sans overflow-hidden"
                 >
                   Worlds First Canton On Ramp
@@ -582,7 +585,10 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ 
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1] 
+                  }}
                   className="flex gap-6 justify-center overflow-hidden"
                 >
                   <button
