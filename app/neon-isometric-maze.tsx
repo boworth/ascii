@@ -547,7 +547,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           <div className="flex items-center justify-center gap-16">
             {/* Left side - Title and Buttons */}
             <motion.div 
-              className={`button-container ${isCollapsing ? "collapsing" : ""} flex-shrink-0`}
+              className={`button-container ${isCollapsing ? "collapsing" : ""} flex-shrink-0 text-center`}
               animate={{
                 x: showRegisterModal ? -200 : 0
               }}
@@ -556,6 +556,11 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                 ease: [0.4, 0, 0.2, 1]
               }}
             >
+              {/* Ascii Title */}
+              <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-8">
+                Ascii
+              </h1>
+              
               {!showLoginModal && !showRegisterModal && (
                 <p className="text-white text-2xl mb-8 font-sans">Worlds First Canton On Ramp</p>
               )}

@@ -1,17 +1,15 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import NeonIsometricMaze from "./neon-isometric-maze"
-import { motion, useAnimation } from "framer-motion"
+import { motion } from "framer-motion"
 
 export default function Home() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isGlitchComplete, setIsGlitchComplete] = useState(false)
-  const [isScalingStarted, setIsScalingStarted] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
-  const textControls = useAnimation()
   const containerRef = useRef<HTMLDivElement>(null)
 
   const handleLoadComplete = useCallback(() => {
@@ -20,13 +18,16 @@ export default function Home() {
   }, [])
 
   const handleButtonClick = useCallback(() => {
-    console.log("Button clicked, starting scaling animation")
-    setIsScalingStarted(true)
+    console.log("Button clicked, starting animation")
   }, [])
 
   const handleGlitchComplete = useCallback(() => {
     console.log("Glitch effect completed, starting fade to black and scroll")
     setIsGlitchComplete(true)
+    // Start scroll after a brief delay
+    setTimeout(() => {
+      setIsScrolling(true)
+    }, 1500)
   }, [])
 
   const handleScrollComplete = useCallback(() => {
@@ -36,33 +37,6 @@ export default function Home() {
     }, 500)
   }, [router])
 
-  useEffect(() => {
-    if (isScalingStarted) {
-      console.log("Starting scaling animation")
-      textControls.start({
-        scale: [1, 1.5],
-        transition: { duration: 15, ease: "linear" },
-      })
-    }
-  }, [isScalingStarted, textControls])
-
-  useEffect(() => {
-    if (isGlitchComplete) {
-      console.log("Glitch complete, stopping scaling and starting fade to black")
-      textControls.stop()
-      
-      // Fade text to black
-      textControls.start({
-        color: ["rgba(255,255,255,1)", "rgba(0,0,0,1)"],
-        transition: { duration: 1.5, ease: "easeInOut" },
-      })
-      
-      // Start scroll after a brief delay
-      setTimeout(() => {
-        setIsScrolling(true)
-      }, 1500)
-    }
-  }, [isGlitchComplete, textControls])
 
   return (
     <div 
@@ -163,31 +137,7 @@ export default function Home() {
           />
           
           {/* Text and buttons - only show after loading */}
-          {!isLoading && (
-            <motion.div 
-              className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none overflow-hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <motion.div
-                initial={{ color: "white", scale: 1 }}
-                animate={textControls}
-                style={{
-                  transformOrigin: "center",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "100%",
-                  height: "100%",
-                }}
-              >
-                <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-center leading-none whitespace-nowrap">
-                  Ascii
-                </h1>
-              </motion.div>
-            </motion.div>
-          )}
+          {/* Title is now rendered inside NeonIsometricMaze component */}
         </div>
 
         {/* Wallet Page Section - Transition to actual wallet */}
