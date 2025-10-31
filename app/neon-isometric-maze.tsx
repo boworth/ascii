@@ -543,63 +543,55 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         crossOrigin="anonymous"
       />
       {showButtons && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40">
-          {/* Center point container - always centered */}
-          <div className="relative">
-            {/* Left side - Title and Buttons (centered by default, slides left when modal opens) */}
-            <motion.div 
-              className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)'
-              }}
-              animate={{
-                x: showRegisterModal ? -300 : 0
-              }}
-              transition={{
-                duration: 0.5,
-                ease: [0.4, 0, 0.2, 1]
-              }}
-            >
-              {/* Ascii Title */}
-              <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-4">
-                Ascii
-              </h1>
-              
-              {!showLoginModal && !showRegisterModal && (
-                <p className="text-white text-2xl mb-6 font-sans">Worlds First Canton On Ramp</p>
-              )}
-              
-              {!showLoginModal && !showRegisterModal ? (
-                <div className="flex gap-6 justify-center">
-                  <button
-                    onClick={handleLoginClick}
-                    className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={handleCreateWalletClick}
-                    className="px-8 py-3 bg-white text-black text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
-                  >
-                    Create Wallet
-                  </button>
-                </div>
-              ) : showLoginModal ? (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    transition={{
-                      duration: 0.25,
-                      ease: [0.16, 1, 0.3, 1],
-                      type: "tween"
-                    }}
-                    className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96"
-                  >
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex items-center justify-center gap-16">
+          {/* Title and Buttons Container */}
+          <motion.div 
+            className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
+            animate={{
+              x: showRegisterModal ? -200 : 0
+            }}
+            transition={{
+              duration: 0.5,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
+            {/* Ascii Title */}
+            <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-4">
+              Ascii
+            </h1>
+            
+            {!showLoginModal && !showRegisterModal && (
+              <p className="text-white text-2xl mb-6 font-sans">Worlds First Canton On Ramp</p>
+            )}
+            
+            {!showLoginModal && !showRegisterModal ? (
+              <div className="flex gap-6 justify-center">
+                <button
+                  onClick={handleLoginClick}
+                  className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={handleCreateWalletClick}
+                  className="px-8 py-3 bg-white text-black text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                >
+                  Create Wallet
+                </button>
+              </div>
+            ) : showLoginModal ? (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    ease: [0.16, 1, 0.3, 1],
+                    type: "tween"
+                  }}
+                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96"
+                >
                     <form onSubmit={handleLogin} className="space-y-4">
                       <div>
                         <input
@@ -650,39 +642,32 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                           Login
                         </button>
                       </div>
-                    </form>
-                  </motion.div>
-                </AnimatePresence>
-              ) : null}
-            </motion.div>
-
-            {/* Right side - Registration Modal (slides in from right) */}
-            <AnimatePresence mode="wait">
-              {showRegisterModal && (
-                <motion.div
-                  style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  initial={{ x: 600, opacity: 0 }}
-                  animate={{ x: 300, opacity: 1 }}
-                  exit={{ x: 600, opacity: 0 }}
-                  transition={{
-                    duration: 0.5,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-                >
-                  <RegistrationModal
-                    isOpen={showRegisterModal}
-                    onClose={() => setShowRegisterModal(false)}
-                    onSuccess={handleRegistrationSuccess}
-                  />
+                  </form>
                 </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              </AnimatePresence>
+            ) : null}
+          </motion.div>
+
+          {/* Registration Modal - positioned absolutely to slide in */}
+          {showRegisterModal && (
+            <motion.div
+              className="absolute"
+              style={{ left: 'calc(50% + 200px)' }}
+              initial={{ x: 400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 400, opacity: 0 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+            >
+              <RegistrationModal
+                isOpen={showRegisterModal}
+                onClose={() => setShowRegisterModal(false)}
+                onSuccess={handleRegistrationSuccess}
+              />
+            </motion.div>
+          )}
         </div>
       )}
 
