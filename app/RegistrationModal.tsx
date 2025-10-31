@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface RegistrationModalProps {
   isOpen: boolean
@@ -68,17 +67,7 @@ export default function RegistrationModal({ isOpen, onClose, onSuccess }: Regist
   if (!isOpen) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{
-          duration: 0.25,
-          ease: [0.16, 1, 0.3, 1],
-          type: "tween"
-        }}
-        className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-full max-w-md"
+      <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-full max-w-md"
       >
         {successMessage ? (
           <div className="text-center py-8">
@@ -227,8 +216,7 @@ export default function RegistrationModal({ isOpen, onClose, onSuccess }: Regist
             </form>
           </>
         )}
-      </motion.div>
-    </AnimatePresence>
+      </div>
   )
 }
 

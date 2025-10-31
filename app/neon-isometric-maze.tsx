@@ -543,100 +543,128 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         crossOrigin="anonymous"
       />
       {showButtons && (
-        <div className={`absolute ${showLoginModal ? 'top-[66%]' : 'top-[63%]'} left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 text-center transition-all duration-300`}>
-          <div className={`button-container ${isCollapsing ? "collapsing" : ""}`}>
-            {!showLoginModal && (
-              <p className="text-white text-2xl mb-8 font-sans">Worlds First Canton On Ramp</p>
-            )}
-            
-            {!showLoginModal && !showRegisterModal ? (
-              <div className="flex gap-6 justify-center">
-                <button
-                  onClick={handleLoginClick}
-                  className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={handleCreateWalletClick}
-                  className="px-8 py-3 bg-white text-black text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
-                >
-                  Create Wallet
-                </button>
-              </div>
-            ) : showLoginModal ? (
-              <AnimatePresence>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 w-full max-w-7xl px-8">
+          <div className="flex items-center justify-center gap-16">
+            {/* Left side - Title and Buttons */}
+            <motion.div 
+              className={`button-container ${isCollapsing ? "collapsing" : ""} flex-shrink-0`}
+              animate={{
+                x: showRegisterModal ? -200 : 0
+              }}
+              transition={{
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+            >
+              {!showLoginModal && !showRegisterModal && (
+                <p className="text-white text-2xl mb-8 font-sans">Worlds First Canton On Ramp</p>
+              )}
+              
+              {!showLoginModal && !showRegisterModal ? (
+                <div className="flex gap-6 justify-center">
+                  <button
+                    onClick={handleLoginClick}
+                    className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={handleCreateWalletClick}
+                    className="px-8 py-3 bg-white text-black text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                  >
+                    Create Wallet
+                  </button>
+                </div>
+              ) : showLoginModal ? (
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      ease: [0.16, 1, 0.3, 1],
+                      type: "tween"
+                    }}
+                    className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96"
+                  >
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div>
+                        <input
+                          type="text"
+                          value={username}
+                          onChange={(e) => {
+                            setUsername(e.target.value)
+                            if (loginError) setLoginError("")
+                          }}
+                          className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                            loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                          }`}
+                          placeholder="Username"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value)
+                            if (loginError) setLoginError("")
+                          }}
+                          className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
+                            loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
+                          }`}
+                          placeholder="Password"
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowLoginModal(false)
+                            setLoginError("")
+                            setUsername("")
+                            setPassword("")
+                          }}
+                          className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-black transition-all duration-200 font-sans"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 font-sans"
+                        >
+                          Login
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </AnimatePresence>
+              ) : null}
+            </motion.div>
+
+            {/* Right side - Registration Modal */}
+            <AnimatePresence>
+              {showRegisterModal && (
                 <motion.div
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.95, opacity: 0 }}
+                  initial={{ x: 400, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 400, opacity: 0 }}
                   transition={{
-                    duration: 0.25,
-                    ease: [0.16, 1, 0.3, 1], // Subtle, smooth easing without bounce
-                    type: "tween"
+                    duration: 0.5,
+                    ease: [0.4, 0, 0.2, 1]
                   }}
-                  className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-6 w-96"
+                  className="flex-shrink-0"
                 >
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => {
-                          setUsername(e.target.value)
-                          if (loginError) setLoginError("")
-                        }}
-                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                        }`}
-                        placeholder="Username"
-                        autoFocus
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value)
-                          if (loginError) setLoginError("")
-                        }}
-                        className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                          loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                        }`}
-                        placeholder="Password"
-                      />
-                    </div>
-                    <div className="flex gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowLoginModal(false)
-                          setLoginError("")
-                          setUsername("")
-                          setPassword("")
-                        }}
-                        className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-black transition-all duration-200 font-sans"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 font-sans"
-                      >
-                        Login
-                      </button>
-                    </div>
-                  </form>
+                  <RegistrationModal
+                    isOpen={showRegisterModal}
+                    onClose={() => setShowRegisterModal(false)}
+                    onSuccess={handleRegistrationSuccess}
+                  />
                 </motion.div>
-              </AnimatePresence>
-            ) : showRegisterModal ? (
-              <RegistrationModal
-                isOpen={showRegisterModal}
-                onClose={() => setShowRegisterModal(false)}
-                onSuccess={handleRegistrationSuccess}
-              />
-            ) : null}
+              )}
+            </AnimatePresence>
           </div>
         </div>
       )}
