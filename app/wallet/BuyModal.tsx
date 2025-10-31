@@ -107,10 +107,10 @@ export default function BuyModal({ isOpen, onClose }: BuyModalProps) {
                 type="number" 
                 placeholder="0.00"
                 value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentAmount(e.target.value)}
                 className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all text-xl rounded-lg ${
                   theme === 'dark' 
-                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-gray-600'
+                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-[#666]'
                     : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
                 }`}
               />

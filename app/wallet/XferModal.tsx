@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react"
-import { useWallet } from "./WalletContext"
+import { useWallet, Wallet } from "./WalletContext"
 import { useTheme } from "./ThemeContext"
 
 interface XferModalProps {
@@ -48,8 +48,8 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   // Combine user's wallets (excluding current wallet) with recent transfers
   const savedAddresses: SavedAddress[] = [
     ...wallets
-      .filter((_, index) => index !== wallets.findIndex(w => w.address === currentWallet.address))
-      .map(wallet => ({
+      .filter((_: Wallet, index: number) => index !== wallets.findIndex((w: Wallet) => w.address === currentWallet.address))
+      .map((wallet: Wallet) => ({
         label: wallet.label,
         address: wallet.address,
         type: 'wallet' as const
@@ -87,8 +87,8 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   useEffect(() => {
     const combined: SavedAddress[] = [
       ...wallets
-        .filter((_, index) => index !== wallets.findIndex(w => w.address === currentWallet.address))
-        .map(wallet => ({
+        .filter((_: Wallet, index: number) => index !== wallets.findIndex((w: Wallet) => w.address === currentWallet.address))
+        .map((wallet: Wallet) => ({
           label: wallet.label,
           address: wallet.address,
           type: 'wallet' as const
@@ -99,7 +99,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   }, [wallets, currentWallet, recentTransfers])
 
   // Filter addresses based on search query
-  const filteredAddresses = editableSavedAddresses.filter(addr => 
+  const filteredAddresses = editableSavedAddresses.filter((addr: SavedAddress) => 
     addr.label.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -162,10 +162,10 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                 type="text" 
                 placeholder="bron::..." 
                 value={toAddress}
-                onChange={(e) => setToAddress(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToAddress(e.target.value)}
                 className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all rounded-lg ${
                   theme === 'dark' 
-                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-gray-600'
+                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-[#666]'
                     : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
                 }`}
               />
@@ -177,10 +177,10 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                 type="number" 
                 placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
                 className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all text-xl rounded-lg ${
                   theme === 'dark' 
-                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-gray-600'
+                    ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-[#666]'
                     : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
                 }`}
               />
@@ -271,7 +271,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                       type="text"
                       placeholder="Search by name..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                       className={`w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 ${
                         theme === 'dark' 
                           ? 'border-[#3a3a3a] focus:ring-[#4a4a4a] bg-[#1a1a1a] text-white placeholder-gray-500'
@@ -314,7 +314,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                         No addresses found
                       </div>
                     ) : (
-                      filteredAddresses.map((saved, index) => (
+                      filteredAddresses.map((saved: SavedAddress, index: number) => (
                       <div
                         key={index}
                         className={`w-full p-4 border rounded-lg ${
@@ -327,7 +327,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                             <input
                               type="text"
                               value={editLabel}
-                              onChange={(e) => setEditLabel(e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditLabel(e.target.value)}
                               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 font-semibold ${
                                 theme === 'dark'
                                   ? 'border-[#3a3a3a] focus:ring-[#4a4a4a] bg-[#2a2a2a] text-white'
