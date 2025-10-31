@@ -544,12 +544,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       />
       {showButtons && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-7xl px-8">
-          <div className="flex items-center justify-center gap-16">
+          <div className="flex items-center justify-center gap-12">
             {/* Left side - Title and Buttons */}
             <motion.div 
               className={`button-container ${isCollapsing ? "collapsing" : ""} flex-shrink-0 text-center`}
               animate={{
-                x: showRegisterModal ? -200 : 0
+                x: showRegisterModal ? -250 : 0
               }}
               transition={{
                 duration: 0.5,
@@ -557,12 +557,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               }}
             >
               {/* Ascii Title */}
-              <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-8">
+              <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] 2xl:text-[14rem] font-bold text-white leading-none whitespace-nowrap mb-4">
                 Ascii
               </h1>
               
               {!showLoginModal && !showRegisterModal && (
-                <p className="text-white text-2xl mb-8 font-sans">Worlds First Canton On Ramp</p>
+                <p className="text-white text-2xl mb-6 font-sans">Worlds First Canton On Ramp</p>
               )}
               
               {!showLoginModal && !showRegisterModal ? (
@@ -650,7 +650,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             </motion.div>
 
             {/* Right side - Registration Modal */}
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
               {showRegisterModal && (
                 <motion.div
                   initial={{ x: 400, opacity: 0 }}
@@ -660,7 +660,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                     duration: 0.5,
                     ease: [0.4, 0, 0.2, 1]
                   }}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 flex items-center justify-center"
                 >
                   <RegistrationModal
                     isOpen={showRegisterModal}
