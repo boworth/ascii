@@ -659,9 +659,9 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                 ease: "linear"
               },
               color: {
-                duration: 0.8,
-                delay: 3.8,
-                ease: [0.43, 0.13, 0.23, 0.96]
+                duration: 1.5,
+                delay: 3.0,
+                ease: "easeInOut"
               }
             }}
             style={{

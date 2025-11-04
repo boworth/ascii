@@ -24,10 +24,10 @@ export default function Home() {
   const handleGlitchComplete = useCallback(() => {
     console.log("Glitch effect completed, starting fade to black and scroll")
     setIsGlitchComplete(true)
-    // Start scroll after a brief delay
+    // Start scroll after letting it sit longer
     setTimeout(() => {
       setIsScrolling(true)
-    }, 1500)
+    }, 2500)
   }, [])
 
   const handleScrollComplete = useCallback(() => {
