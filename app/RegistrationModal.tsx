@@ -67,7 +67,7 @@ export default function RegistrationModal({ isOpen, onClose, onSuccess }: Regist
   if (!isOpen) return null
 
   return (
-      <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-[32rem]"
+      <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-4 sm:p-6 md:p-8 w-[90vw] sm:w-[28rem] md:w-[32rem] max-w-[32rem]"
       >
         {successMessage ? (
           <div className="text-center py-8">

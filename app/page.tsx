@@ -41,7 +41,7 @@ export default function Home() {
   return (
     <div 
       ref={containerRef}
-      className="w-screen h-screen overflow-hidden bg-black relative select-none"
+      className="fixed inset-0 overflow-hidden bg-black select-none"
     >
       {/* Loading Screen */}
       {isLoading && (
@@ -91,28 +91,23 @@ export default function Home() {
       )}
 
       {/* Scrollable container */}
-      <motion.div
-        className="w-full h-[200vh]"
-        initial={{ y: 0 }}
-        animate={isScrolling ? { y: "-100vh" } : { y: 0 }}
-        transition={{ 
-          duration: 2.0,
-          ease: [0.33, 1, 0.68, 1], // easeOutCubic - smooth deceleration
-          type: "tween"
-        }}
-        style={{ 
-          backfaceVisibility: "hidden", 
-          transform: "translateZ(0)",
-          willChange: isScrolling ? "transform" : "auto"
-        }}
-        onAnimationComplete={() => {
-          if (isScrolling) {
-            handleScrollComplete()
-          }
-        }}
-      >
+      <div className="fixed inset-0">
         {/* Landing Page Section */}
-        <div className="w-screen h-screen relative">
+        <motion.div 
+          className="fixed inset-0"
+          initial={{ y: 0 }}
+          animate={isScrolling ? { y: "-100vh" } : { y: 0 }}
+          transition={{ 
+            duration: 2.0,
+            ease: [0.33, 1, 0.68, 1], // easeOutCubic - smooth deceleration
+            type: "tween"
+          }}
+          style={{ 
+            backfaceVisibility: "hidden", 
+            transform: "translateZ(0)",
+            willChange: isScrolling ? "transform" : "auto"
+          }}
+        >
           {/* Maze with fade-in */}
           <motion.div
             className="absolute inset-0"
@@ -125,6 +120,7 @@ export default function Home() {
               onGlitchComplete={handleGlitchComplete} 
               onButtonClick={handleButtonClick}
               onLoadComplete={handleLoadComplete}
+              isScrolling={isScrolling}
             />
           </motion.div>
           
@@ -138,11 +134,23 @@ export default function Home() {
           
           {/* Text and buttons - only show after loading */}
           {/* Title is now rendered inside NeonIsometricMaze component */}
-        </div>
+        </motion.div>
 
         {/* Wallet Page Section - Transition to actual wallet */}
-        <div 
-          className="w-screen h-screen relative flex items-center justify-center bg-gray-200"
+        <motion.div 
+          className="fixed inset-0 flex items-center justify-center bg-gray-200"
+          initial={{ y: "100vh" }}
+          animate={isScrolling ? { y: 0 } : { y: "100vh" }}
+          transition={{ 
+            duration: 2.0,
+            ease: [0.33, 1, 0.68, 1],
+            type: "tween"
+          }}
+          onAnimationComplete={() => {
+            if (isScrolling) {
+              handleScrollComplete()
+            }
+          }}
         >
           <motion.div
             initial={{ opacity: 0 }}
@@ -192,8 +200,8 @@ export default function Home() {
               </motion.span>
             </div>
           </motion.div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   )
 }

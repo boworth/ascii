@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -18,9 +18,10 @@ interface IsometricMazeProps {
   onGlitchComplete: () => void
   onButtonClick: () => void
   onLoadComplete?: () => void
+  isScrolling?: boolean
 }
 
-const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onButtonClick, onLoadComplete }) => {
+const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onButtonClick, onLoadComplete, isScrolling = false }) => {
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -40,50 +41,13 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
   const [isTitleAnimating, setIsTitleAnimating] = useState(false)
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920)
+  const mobileBreakpoint = 1400 // Switch to mobile layout much earlier
 
   // Pre-define character arrays to avoid recreating them
   const glitchSequenceChars = ["+", "=", "-", ":", ".", " "]
   const randomGlitchChars = ["#", "$", "!", "?", "&", "%", "@", "/", "\\", "|", "<", ">"]
   const asciiChars = ["@", "%", "#", "*", "+", "=", "-", ":", ".", " "]
-
-  const handleLogin = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Simple test credentials for now
-    if (username === "test" && password === "test") {
-      setLoginError("")
-      setShowLoginModal(false)
-      setShowButtons(false)
-      setIsCollapsing(true)
-      
-      // Start title animation
-      setTimeout(() => {
-        setIsTitleAnimating(true)
-      }, 300)
-      
-      // Then start glitch animation after title grows
-      setTimeout(() => {
-        onButtonClick()
-        startGlitchAnimation()
-      }, 2000)
-    } else {
-      setLoginError("Invalid username or password")
-    }
-  }, [username, password, onButtonClick, startGlitchAnimation])
-
-  const handleLoginClick = useCallback(() => {
-    setShowLoginModal(true)
-  }, [])
-
-  const handleCreateWalletClick = useCallback(() => {
-    setShowRegisterModal(true)
-  }, [])
-
-  const handleRegistrationSuccess = useCallback(() => {
-    setShowRegisterModal(false)
-    // Show a message or redirect to login
-    // For now, just close the modal - user will need to verify email first
-  }, [])
 
   const startGlitchAnimation = useCallback(() => {
     if (!isGlitching) {
@@ -93,10 +57,20 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       glitchCompleteRef.current = false // Reset completion tracker
 
       if (canvasRef.current) {
-        // Use a lower fixedCols value for larger ASCII characters
-        const fixedCols = 180
+        // Dynamically adjust columns based on screen width for consistent performance
         const aspectRatio = window.innerWidth / window.innerHeight
-        const fixedRows = Math.floor(fixedCols / aspectRatio)
+        const maxCells = 10000 // Cap total cells for performance
+        
+        // Adjust columns based on screen width
+        let fixedCols = Math.min(140, Math.floor(window.innerWidth / 12))
+        let fixedRows = Math.floor(fixedCols / aspectRatio)
+        
+        // If too many cells, reduce columns
+        if (fixedCols * fixedRows > maxCells) {
+          fixedCols = Math.floor(Math.sqrt(maxCells * aspectRatio))
+          fixedRows = Math.floor(fixedCols / aspectRatio)
+        }
+        
         const totalCells = fixedCols * fixedRows
 
         // Reset each cell's state instead of replacing the whole array
@@ -160,6 +134,45 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     }
   }, [isGlitching])
 
+  const handleLogin = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Simple test credentials for now
+    if (username === "test" && password === "test") {
+      setLoginError("")
+      setShowLoginModal(false)
+      setShowButtons(false)
+      setIsCollapsing(true)
+      
+      // Start title scaling immediately
+      setTimeout(() => {
+        setIsTitleAnimating(true)
+      }, 100)
+      
+      // Then start glitch animation after a brief delay
+      setTimeout(() => {
+        onButtonClick()
+        startGlitchAnimation()
+      }, 800)
+    } else {
+      setLoginError("Invalid username or password")
+    }
+  }, [username, password, onButtonClick, startGlitchAnimation])
+
+  const handleLoginClick = useCallback(() => {
+    setShowLoginModal(true)
+  }, [])
+
+  const handleCreateWalletClick = useCallback(() => {
+    setShowRegisterModal(true)
+  }, [])
+
+  const handleRegistrationSuccess = useCallback(() => {
+    setShowRegisterModal(false)
+    // Show a message or redirect to login
+    // For now, just close the modal - user will need to verify email first
+  }, [])
+
   const handleButtonClick = useCallback(() => {
     setIsCollapsing(true)
     onButtonClick()
@@ -170,6 +183,15 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     }, 100)
   }, [startGlitchAnimation, onButtonClick])
 
+  // Track window width for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   useEffect(() => {
     const canvas = canvasRef.current
     const video = videoRef.current
@@ -178,8 +200,24 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const fixedCols = 180
-    let fixedRows: number
+    // Dynamic column calculation based on viewport
+    const calculateOptimalGrid = () => {
+      const aspectRatio = window.innerWidth / window.innerHeight
+      const maxCells = 10000 // Cap total cells for performance
+      
+      let cols = Math.min(140, Math.floor(window.innerWidth / 12))
+      let rows = Math.floor(cols / aspectRatio)
+      
+      // If too many cells, reduce columns
+      if (cols * rows > maxCells) {
+        cols = Math.floor(Math.sqrt(maxCells * aspectRatio))
+        rows = Math.floor(cols / aspectRatio)
+      }
+      
+      return { cols, rows }
+    }
+    
+    let { cols: fixedCols, rows: fixedRows } = calculateOptimalGrid()
 
     // Pre-compute neighbor offsets to avoid recreating them
     const neighborOffsets = [
@@ -196,8 +234,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      const aspectRatio = canvas.width / canvas.height
-      fixedRows = Math.floor(fixedCols / aspectRatio)
+      
+      // Recalculate optimal grid on resize
+      const newGrid = calculateOptimalGrid()
+      fixedCols = newGrid.cols
+      fixedRows = newGrid.rows
+      
       initialImageDataRef.current = null
     }
 
@@ -230,28 +272,47 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       return isComplete
     }
 
+    let frameSkipCounter = 0
+    const FRAME_SKIP = 2 // Skip every other frame to reduce CPU usage
+    
+    // Create temp canvas once and reuse it
+    const tempCanvas = document.createElement("canvas")
+    const initialGrid = calculateOptimalGrid()
+    tempCanvas.width = initialGrid.cols
+    tempCanvas.height = initialGrid.rows
+    const tempCtx = tempCanvas.getContext("2d", { alpha: false, willReadFrequently: true })
+    if (!tempCtx) return
+    tempCtx.imageSmoothingEnabled = false
+    
     const draw = () => {
       if (!ctx || !video || !isVideoLoaded) return
+
+      // Skip frames to reduce CPU usage
+      frameSkipCounter++
+      if (!isGlitching && frameSkipCounter % FRAME_SKIP !== 0) {
+        animationFrameRef.current = requestAnimationFrame(draw)
+        return
+      }
 
       const cellWidth = canvas.width / fixedCols
       const cellHeight = canvas.height / fixedRows
 
-      // Create temp canvas for image processing
-      const tempCanvas = document.createElement("canvas")
-      tempCanvas.width = fixedCols
-      tempCanvas.height = fixedRows
-      const tempCtx = tempCanvas.getContext("2d")
-      if (!tempCtx) return
+      // Update temp canvas size if needed
+      if (tempCanvas.width !== fixedCols || tempCanvas.height !== fixedRows) {
+        tempCanvas.width = fixedCols
+        tempCanvas.height = fixedRows
+      }
 
-      // Draw video to temp canvas
+      // Draw video to temp canvas with lower quality
       tempCtx.drawImage(video, 0, 0, fixedCols, fixedRows)
       const currentImageData = tempCtx.getImageData(0, 0, fixedCols, fixedRows)
 
       // Capture initial frame when starting the glitch
       if (isGlitching && !initialImageDataRef.current) {
-        initialImageDataRef.current = currentImageData.slice
-          ? currentImageData.slice()
-          : tempCtx.getImageData(0, 0, fixedCols, fixedRows)
+        // Create a deep copy of the image data
+        const copy = tempCtx.createImageData(fixedCols, fixedRows)
+        copy.data.set(currentImageData.data)
+        initialImageDataRef.current = copy
       }
 
       // Clear canvas with solid black to avoid ghosting
@@ -490,15 +551,17 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     const handleVideoLoad = () => {
       setIsVideoLoaded(true)
       onLoadComplete?.()
+      // Slow down video to reduce resource usage
+      video.playbackRate = 0.5
       video.play().catch((err) => console.error("Error playing video:", err))
 
       // Start animation loop immediately
       resize()
 
       // Initialize the glitch map for normal display
-      const fixedCols = 180
-      const aspectRatio = window.innerWidth / window.innerHeight
-      const fixedRows = Math.floor(fixedCols / aspectRatio)
+      const optimalGrid = calculateOptimalGrid()
+      const fixedCols = optimalGrid.cols
+      const fixedRows = optimalGrid.rows
       const totalCells = fixedCols * fixedRows
 
       // Only initialize if not already done
@@ -539,69 +602,96 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   }, [isVideoLoaded, isGlitching, onGlitchComplete])
 
   return (
-    <>
-      <canvas ref={canvasRef} className="block w-full h-full" />
+    <React.Fragment>
+      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block" />
       <video
         ref={videoRef}
-        src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ocean-YsEsoctKOSQZhvFu9EDVMH7VFxXqn4.mp4"
+        src="/ocean-compressed.mp4"
         loop
         muted
         playsInline
         className="hidden"
-        crossOrigin="anonymous"
+        preload="metadata"
+        width="240"
+        height="160"
       />
-      {showButtons && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex items-center justify-center gap-16">
-          {/* Title and Buttons Container */}
-          <motion.div 
-            className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
+      {/* Always show the title container, but conditionally render buttons/modals */}
+      <motion.div 
+        className="fixed inset-0 flex items-center justify-center z-40"
+        animate={{
+          y: isScrolling ? -window.innerHeight : 0
+        }}
+        transition={{
+          duration: 2.0,
+          ease: [0.33, 1, 0.68, 1]
+        }}
+        style={{ 
+          pointerEvents: showLoginModal || showRegisterModal ? 'auto' : 'none',
+          display: windowWidth < mobileBreakpoint && (showLoginModal || showRegisterModal) ? 'none' : 'flex'
+        }}
+      >
+        {/* Title and Buttons Container */}
+        <motion.div 
+          className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
+          animate={{
+            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -300 : 0
+          }}
+          transition={{
+            duration: 0.5,
+            ease: [0.4, 0, 0.2, 1]
+          }}
+          style={{ pointerEvents: 'auto' }}
+        >
+          {/* Ascii Title */}
+          <motion.h1 
+            className="font-bold leading-none whitespace-nowrap mb-2 sm:mb-4 mx-auto block"
+            initial={{
+              scale: 1,
+              color: '#ffffff'
+            }}
             animate={{
-              x: showRegisterModal ? -200 : 0
+              scale: isTitleAnimating ? 1.3 : 1,
+              color: isTitleAnimating ? '#000000' : '#ffffff'
             }}
             transition={{
-              duration: 0.5,
-              ease: [0.4, 0, 0.2, 1]
+              scale: {
+                duration: 6.0,
+                ease: "linear"
+              },
+              color: {
+                duration: 0.8,
+                delay: 3.8,
+                ease: [0.43, 0.13, 0.23, 0.96]
+              }
+            }}
+            style={{
+              fontSize: 'clamp(6rem, 20vw, 14rem)'
             }}
           >
-            {/* Ascii Title */}
-            <motion.h1 
-              className="font-bold leading-none whitespace-nowrap mb-4"
-              animate={{
-                scale: isTitleAnimating ? 1.5 : 1,
-                color: isTitleAnimating ? '#000000' : '#ffffff'
-              }}
-              transition={{
-                duration: 1.5,
-                ease: [0.43, 0.13, 0.23, 0.96]
-              }}
-              style={{
-                fontSize: 'clamp(4rem, 14vw, 14rem)'
-              }}
-            >
-              Ascii
-            </motion.h1>
-            
-            {/* Subtitle - animated */}
-            <AnimatePresence mode="wait">
-              {!showLoginModal && !showRegisterModal && (
-                <motion.p 
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: '1.5rem' }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  transition={{ 
-                    duration: 0.3,
-                    ease: [0.4, 0, 0.2, 1] 
-                  }}
-                  className="text-white text-2xl font-sans overflow-hidden"
-                >
-                  Worlds First Canton On Ramp
-                </motion.p>
-              )}
-            </AnimatePresence>
-            
-            {/* Buttons - animated */}
-            <AnimatePresence mode="wait">
-              {!showLoginModal && !showRegisterModal ? (
+            Ascii
+          </motion.h1>
+          
+          {/* Subtitle - animated */}
+          <AnimatePresence mode="wait">
+            {!showLoginModal && !showRegisterModal && showButtons && (
+              <motion.p 
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: '1.5rem' }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{ 
+                  duration: 0.3,
+                  ease: [0.4, 0, 0.2, 1] 
+                }}
+                className="text-white text-lg sm:text-xl md:text-2xl font-sans overflow-hidden px-4"
+              >
+                Worlds First Canton On Ramp
+              </motion.p>
+            )}
+          </AnimatePresence>
+          
+          {/* Buttons - animated */}
+          <AnimatePresence mode="wait">
+            {!showLoginModal && !showRegisterModal && showButtons ? (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -610,17 +700,17 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                     duration: 0.3,
                     ease: [0.4, 0, 0.2, 1] 
                   }}
-                  className="flex gap-6 justify-center overflow-hidden"
+                  className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center overflow-hidden px-4"
                 >
                   <button
                     onClick={handleLoginClick}
-                    className="px-8 py-3 bg-transparent border-2 border-white text-white text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                    className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border-2 border-white text-white text-base sm:text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
                   >
                     Login
                   </button>
                   <button
                     onClick={handleCreateWalletClick}
-                    className="px-8 py-3 bg-white text-black text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                    className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-black text-base sm:text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
                   >
                     Create Wallet
                   </button>
@@ -628,21 +718,51 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               ) : null}
             </AnimatePresence>
           </motion.div>
+        </motion.div>
 
-          {/* Login Modal - positioned absolutely to slide in */}
-          {showLoginModal && (
+        {/* Login Modal - positioned outside scrolling container */}
+        {showLoginModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
             <motion.div
-              className="absolute"
-              style={{ left: 'calc(50% + 200px)' }}
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
+              className="relative flex flex-col items-center"
+              style={{ 
+                ...(windowWidth >= mobileBreakpoint ? { 
+                  marginLeft: '700px'
+                } : {})
+              }}
+              initial={{ 
+                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
+              }}
+              animate={{ 
+                x: 0,
+                scale: 1,
+                opacity: 1
+              }}
+              exit={{ 
+                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
+              }}
               transition={{
                 duration: 0.5,
                 ease: [0.4, 0, 0.2, 1]
               }}
             >
-              <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-8 w-[32rem]">
+              {/* Show title above modal on mobile */}
+              {windowWidth < mobileBreakpoint && (
+                <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
+                    style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
+                  Ascii
+                </h1>
+              )}
+              <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-4 sm:p-6 md:p-8 w-[90vw] sm:w-[28rem] md:w-[32rem] max-w-[32rem]">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-white">Login</h2>
                   <button
@@ -706,133 +826,60 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                 </form>
               </div>
             </motion.div>
-          )}
+          </motion.div>
+        )}
 
-          {/* Registration Modal - positioned absolutely to slide in */}
-          {showRegisterModal && (
+        {/* Registration Modal - positioned outside scrolling container */}
+        {showRegisterModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+          >
             <motion.div
-              className="absolute"
-              style={{ left: 'calc(50% + 200px)' }}
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
+              className="relative flex flex-col items-center"
+              style={{ 
+                ...(windowWidth >= mobileBreakpoint ? { 
+                  marginLeft: '700px'
+                } : {})
+              }}
+              initial={{ 
+                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
+              }}
+              animate={{ 
+                x: 0,
+                scale: 1,
+                opacity: 1
+              }}
+              exit={{ 
+                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
+              }}
               transition={{
                 duration: 0.5,
                 ease: [0.4, 0, 0.2, 1]
               }}
             >
+              {/* Show title above modal on mobile */}
+              {windowWidth < mobileBreakpoint && (
+                <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
+                    style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
+                  Ascii
+                </h1>
+              )}
               <RegistrationModal
                 isOpen={showRegisterModal}
                 onClose={() => setShowRegisterModal(false)}
                 onSuccess={handleRegistrationSuccess}
               />
             </motion.div>
-          )}
-        </div>
-      )}
-
-      <style jsx>{`
-        @font-face {
-          font-family: 'VT323';
-          src: url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-        }
-
-        .ascii-password-form {
-          font-family: 'Nimbus Sans L', Arial, sans-serif;
-          font-size: 1.5rem;
-          line-height: 1;
-        }
-
-        
-        .password-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          color: white;
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .password-bracket {
-          color: white;
-          padding: 0;
-          line-height: 1;
-          position: relative;
-          z-index: 2;
-          transition: transform 0.1s ease-in-out;
-        }
-        
-        .password-input {
-          background: transparent;
-          color: white;
-          border: none;
-          outline: none;
-          width: 200px;
-          text-align: center;
-          font-family: 'Nimbus Sans L', Arial, sans-serif;
-          font-size: 1.5rem;
-          padding: 0;
-          margin: 0;
-          height: 1.2em;
-          line-height: 1;
-          transition: all 0.1s ease-in-out;
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .password-input::placeholder {
-          color: rgba(255, 255, 255, 0.7);
-          text-align: center;
-        }
-        
-        .wrong-password {
-          animation: flash-red 0.5s;
-        }
-        
-        @keyframes flash-red {
-          0%, 100% { background-color: transparent; color: #ff0000; }
-          50% { background-color: rgba(255, 0, 0, 0.5); color: white; }
-        }
-
-        .collapsing .password-input {
-          width: 0;
-          padding: 0;
-          opacity: 0;
-        }
-
-        .collapsing .left-bracket {
-          transform: translateX(100px);
-        }
-
-        .collapsing .right-bracket {
-          transform: translateX(-100px);
-        }
-
-        .collapsing .password-input::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(to right, transparent, transparent, transparent);
-          animation: wipe 0.1s forwards;
-        }
-
-        @keyframes wipe {
-          to { left: 100%; }
-        }
-
-        .button-container {
-          transition: opacity 0.1s ease-in-out;
-        }
-        
-        .collapsing {
-          opacity: 0;
-        }
-      `}</style>
-    </>
+          </motion.div>
+        )}
+    </React.Fragment>
   )
 }
 
