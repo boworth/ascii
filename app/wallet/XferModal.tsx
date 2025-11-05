@@ -27,9 +27,10 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   const [showBottomFade, setShowBottomFade] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [selectedAsset, setSelectedAsset] = useState<'CC' | 'CUSD'>('CC')
   
-  // Use current wallet balance
-  const availableBalance = currentWallet.balance.cc
+  // Use current wallet balance based on selected asset
+  const availableBalance = selectedAsset === 'CC' ? currentWallet.balance.cc : currentWallet.balance.cusd
   
   // Build saved addresses from user's wallets + recent transfers
   const [recentTransfers] = useState<SavedAddress[]>([
@@ -44,7 +45,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
       type: 'recent'
     }
   ])
-
+  
   // Combine user's wallets (excluding current wallet) with recent transfers
   const savedAddresses: SavedAddress[] = [
     ...wallets
@@ -56,25 +57,25 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
       })),
     ...recentTransfers
   ]
-
+  
   const [editableSavedAddresses, setEditableSavedAddresses] = useState(savedAddresses)
-
+  
   const handleSelectAddress = (address: string) => {
     setToAddress(address)
     setShowAddressBook(false)
     setSearchQuery("") // Clear search when closing
   }
-
+  
   const handleCloseAddressBook = () => {
     setShowAddressBook(false)
     setSearchQuery("") // Clear search when closing
   }
-
+  
   const handleStartEdit = (index: number, currentLabel: string) => {
     setEditingIndex(index)
     setEditLabel(currentLabel)
   }
-
+  
   const handleSaveEdit = (index: number) => {
     const updatedAddresses = [...editableSavedAddresses]
     updatedAddresses[index] = { ...updatedAddresses[index], label: editLabel }
@@ -82,7 +83,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
     setEditingIndex(null)
     setEditLabel("")
   }
-
+  
   // Update editable addresses when wallets change
   useEffect(() => {
     const combined: SavedAddress[] = [
@@ -97,17 +98,17 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
     ]
     setEditableSavedAddresses(combined)
   }, [wallets, currentWallet, recentTransfers])
-
+  
   // Filter addresses based on search query
   const filteredAddresses = editableSavedAddresses.filter((addr: SavedAddress) => 
     addr.label.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
+  
   const handleCancelEdit = () => {
     setEditingIndex(null)
     setEditLabel("")
   }
-
+  
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const element = e.currentTarget
     const scrollTop = element.scrollTop
@@ -120,7 +121,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
     // Show bottom fade if not at the bottom
     setShowBottomFade(scrollTop + clientHeight < scrollHeight - 10)
   }
-
+  
   // Check if content is scrollable when address book opens
   useEffect(() => {
     if (showAddressBook && scrollRef.current) {
@@ -130,7 +131,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
       setShowTopFade(false)
     }
   }, [showAddressBook])
-
+  
   const handlePercentageClick = (percentage: number) => {
     const calculatedAmount = (availableBalance * percentage / 100).toFixed(4)
     setAmount(calculatedAmount)
@@ -142,6 +143,53 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
         {/* Content */}
         <div className="px-6 pb-6">
           <div className="space-y-6">
+            {/* Asset Selector - Top Toggle Switch */}
+            <div className="flex justify-start py-2 pl-0">
+              <div 
+                className="relative inline-flex items-center cursor-pointer"
+                onClick={() => setSelectedAsset(prev => prev === 'CC' ? 'CUSD' : 'CC')}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={selectedAsset === 'CUSD'}
+                  readOnly
+                />
+                <div className={`relative h-8 w-32 rounded-full border-2 transition-colors ${
+                  theme === 'dark' 
+                    ? 'bg-[#2a2a2a] border-[#3a3a3a]' 
+                    : 'bg-gray-300 border-gray-400'
+                }`}>
+                  {/* Sliding knob - smaller gray background */}
+                  <div className={`absolute top-[2px] h-[calc(100%-4px)] w-14 rounded-full shadow-sm transition-all duration-300 ${
+                    theme === 'dark' ? 'bg-[#5a5a5a]' : 'bg-gray-400'
+                  } ${
+                    selectedAsset === 'CC' 
+                      ? 'left-[2px]' 
+                      : 'right-[2px]'
+                  }`}></div>
+                  
+                  {/* Static labels - always in same position */}
+                  <div className="absolute inset-0 flex">
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={`text-xs font-bold transition-colors ${
+                        selectedAsset === 'CC' 
+                          ? 'text-white' 
+                          : theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
+                      }`}>CC</span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className={`text-xs font-bold transition-colors ${
+                        selectedAsset === 'CUSD' 
+                          ? 'text-white' 
+                          : theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
+                      }`}>CUSD</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`block text-xs font-bold ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>address</label>
@@ -188,7 +236,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
               {/* Available Balance */}
               <div className="flex items-center justify-between mt-2">
                 <p className={`text-sm ${theme === 'dark' ? 'text-[#999]' : 'text-gray-600'}`}>
-                  Available: <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{availableBalance.toLocaleString()} CC</span>
+                  Available: <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{availableBalance.toLocaleString()} {selectedAsset}</span>
                 </p>
                 
                 {/* Percentage Buttons */}
@@ -230,12 +278,12 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
             <button className={`w-full px-6 py-4 text-white font-bold text-xl rounded-lg transition-colors ${
               theme === 'dark' ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a]' : 'bg-gray-400 hover:bg-gray-500'
             }`}>
-              SEND
+              SEND {selectedAsset}
             </button>
           </div>
         </div>
       </div>
-
+  
       {/* Address Book Overlay Popup */}
       {showAddressBook && (
         <>

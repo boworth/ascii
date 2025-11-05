@@ -8,6 +8,7 @@ export interface Wallet {
   balance: {
     cc: number
     usd: number
+    cusd: number
   }
 }
 
@@ -16,7 +17,7 @@ interface WalletContextType {
   selectedWalletIndex: number
   setSelectedWalletIndex: (index: number) => void
   addWallet: (wallet: Wallet) => void
-  updateWalletBalance: (index: number, balance: { cc: number; usd: number }) => void
+  updateWalletBalance: (index: number, balance: { cc: number; usd: number; cusd: number }) => void
   currentWallet: Wallet
   fdv: string
   ccPrice: number
@@ -53,32 +54,32 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     {
       label: "Main Wallet",
       address: "bron::122067a3096266f3cbb9320eeacf64bd5bec8de8f94c1ae605fda3218d3424a16da3",
-      balance: { cc: 10000.5234, usd: 0 } // USD will be calculated from price
+      balance: { cc: 10000.5234, usd: 0, cusd: 0 } // USD will be calculated from price
     },
     {
       label: "Trading Account",
       address: "bron::1220def456789abcdef0123456789abcdef0123456789abcdef012345",
-      balance: { cc: 5432.1234, usd: 0 }
+      balance: { cc: 5432.1234, usd: 0, cusd: 0 }
     },
     {
       label: "Savings Wallet",
       address: "bron::1220ghi012345678901234567890123456789012345678901234567",
-      balance: { cc: 25000.0000, usd: 0 }
+      balance: { cc: 25000.0000, usd: 0, cusd: 0 }
     },
     {
       label: "Cold Storage",
       address: "bron::1220jkl345678901234567890123456789012345678901234567890",
-      balance: { cc: 50000.0000, usd: 0 }
+      balance: { cc: 50000.0000, usd: 0, cusd: 0 }
     },
     {
       label: "Personal Wallet",
       address: "bron::1220mno678901234567890123456789012345678901234567890123",
-      balance: { cc: 1234.5678, usd: 0 }
+      balance: { cc: 1234.5678, usd: 0, cusd: 0 }
     },
     {
       label: "Business Account",
       address: "bron::1220pqr901234567890123456789012345678901234567890123456",
-      balance: { cc: 7890.1234, usd: 0 }
+      balance: { cc: 7890.1234, usd: 0, cusd: 0 }
     }
   ])
   

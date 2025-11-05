@@ -668,7 +668,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               fontSize: 'clamp(6rem, 20vw, 14rem)'
             }}
           >
-            Ascii
+            Triangle
           </motion.h1>
           
           {/* Subtitle - animated */}
@@ -759,7 +759,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               {windowWidth < mobileBreakpoint && (
                 <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
                     style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
-                  Ascii
+                  Triangle
                 </h1>
               )}
               <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-4 sm:p-6 md:p-8 w-[90vw] sm:w-[28rem] md:w-[32rem] max-w-[32rem]">
@@ -868,7 +868,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               {windowWidth < mobileBreakpoint && (
                 <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
                     style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
-                  Ascii
+                  Triangle
                 </h1>
               )}
               <RegistrationModal

@@ -1,26 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, type MouseEvent } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import TransactionHistory from "./TransactionHistory"
 import XferModal from "./XferModal"
-import BuyModal from "./BuyModal"
+import TradeModal from "./TradeModal"
 import CreateWalletModal from "./CreateWalletModal"
 import { WalletProvider, useWallet, Wallet } from "./WalletContext"
 import { ThemeProvider, useTheme } from "./ThemeContext"
 
 const MAX_WALLETS = 10 // Maximum wallets per user
 
-type ActivePanel = null | 'xfer' | 'buy'
+type ActivePanel = null | 'xfer' | 'trade' | 'spin'
 
 function WalletPageContent() {
-  const { wallets, selectedWalletIndex, setSelectedWalletIndex, currentWallet, addWallet, fdv } = useWallet()
+  const { wallets, selectedWalletIndex, setSelectedWalletIndex, currentWallet, addWallet, fdv, updateWalletBalance, ccPrice } = useWallet()
   const { theme, toggleTheme } = useTheme()
   const [showWalletDropdown, setShowWalletDropdown] = useState(false)
   const [showCreateWallet, setShowCreateWallet] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
+  const [betAmount, setBetAmount] = useState(10)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [reels, setReels] = useState(['7', '💎', '🍒'])
+  const [showWinPopup, setShowWinPopup] = useState(false)
+  const [winAmount, setWinAmount] = useState(0)
+  const [winMultiplier, setWinMultiplier] = useState(0)
+  const [lastPayout, setLastPayout] = useState(0)
+  const [showIdleAnimation, setShowIdleAnimation] = useState(true)
+  const idleAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const displayAddress = `...${currentWallet.address.slice(-4)}`
   const canCreateWallet = wallets.length < MAX_WALLETS
@@ -69,21 +78,235 @@ function WalletPageContent() {
     const newWallet: Wallet = {
       label: walletName,
       address: `bron::1220${randomSuffix}000000000000000000000000000000000000000`,
-      balance: { cc: 0, usd: 0 }
+      balance: { cc: 0, usd: 0, cusd: 0 }
     }
     
     addWallet(newWallet)
     setShowCreateWallet(false)
   }
 
-  const togglePanel = (panel: 'xfer' | 'buy') => {
+  const [cursorPosition, setCursorPosition] = useState({ x: 0.5, y: 0.5 })
+  
+  const handleMouseMove = (e: MouseEvent) => {
+    const x = e.clientX / window.innerWidth
+    const y = e.clientY / window.innerHeight
+    setCursorPosition({ x, y })
+  }
+
+  // Calculate colors from three gradient planes based on cursor position (same as TradeModal)
+  const getGradientColors = () => {
+    const { x, y } = cursorPosition
+    
+    // Layer 1: Vibrant Red-Orange to Bright Cyan gradient (horizontal)
+    const layer1 = {
+      r: Math.round(255 + (30 - 255) * x),
+      g: Math.round(85 + (220 - 85) * x),
+      b: Math.round(30 + (255 - 30) * x)
+    }
+    
+    // Layer 2: Hot Magenta to Vibrant Yellow gradient (vertical)
+    const layer2 = {
+      r: Math.round(255),
+      g: Math.round(50 + (245 - 50) * y),
+      b: Math.round(180 + (50 - 180) * y)
+    }
+    
+    // Layer 3: Electric Lime to Bright Blue gradient (diagonal)
+    const diag = (x + y) / 2
+    const layer3 = {
+      r: Math.round(150 + (50 - 150) * diag),
+      g: Math.round(255 + (130 - 255) * diag),
+      b: Math.round(50 + (255 - 50) * diag)
+    }
+    
+    return {
+      layer1: `rgb(${layer1.r}, ${layer1.g}, ${layer1.b})`,
+      layer2: `rgb(${layer2.r}, ${layer2.g}, ${layer2.b})`,
+      layer3: `rgb(${layer3.r}, ${layer3.g}, ${layer3.b})`
+    }
+  }
+
+  const togglePanel = (panel: 'xfer' | 'trade' | 'spin') => {
     setActivePanel(activePanel === panel ? null : panel)
   }
 
+  // Slot machine symbols
+  const symbols = ['7', '💎', '🔔', '🍊', '🍋', '🍒']
+  
+  // Calculate spin result based on bet amount and desired EV
+  const calculateSpinResult = (bet: number) => {
+    // EV per bet size: 1CC=+0.1, 10CC=+0.2, 100CC=+0.3, 1000CC=+0.4
+    const evMap: { [key: number]: number } = {
+      1: 0.1,
+      10: 0.2,
+      100: 0.3,
+      1000: 0.4
+    }
+    const targetEV = evMap[bet] || 0.1
+    
+    // Calculate target multiplier (bet + EV) / bet
+    // e.g., for 10 CC bet with 0.2 EV: (10 + 0.2) / 10 = 1.02x average
+    const targetMultiplier = (bet + targetEV) / bet
+    
+    // Weighted outcomes to achieve target EV
+    // Most spins are small losses, rare spins are big wins
+    const random = Math.random()
+    
+    let multiplier = 0
+    let resultSymbols: string[] = []
+    
+    // Fixed high win probabilities and their contribution
+    const p4 = 0.08;  // 2x
+    const p5 = 0.04;  // 3x
+    const p6 = 0.02;  // 5x
+    const p7 = 0.008; // 10x
+    const p8 = 0.002; // 15x
+    const p_high = p4 + p5 + p6 + p7 + p8; // 0.15
+    const contrib_high = 2*p4 + 3*p5 + 5*p6 + 10*p7 + 15*p8; // 0.49
+    
+    // Fixed p2 (0.5x)
+    const p2 = 0.3;
+    
+    // Remaining probability for p1 and p3
+    const p_remaining = 1 - p_high - p2; // 0.55
+    
+    // Solve for p1 (0.3x) to hit exact target
+    // From derivation: p1 = (1.19 - targetMultiplier) / 0.7
+    const p1 = (1.19 - targetMultiplier) / 0.7;
+    const p3 = p_remaining - p1;
+    
+    // Cumulative probabilities
+    const cum1 = p1;
+    const cum2 = cum1 + p2;
+    const cum3 = cum2 + p3;
+    const cum4 = cum3 + p4;
+    const cum5 = cum4 + p5;
+    const cum6 = cum5 + p6;
+    const cum7 = cum6 + p7;
+    // cum8 = 1
+    
+    if (random < cum1) {
+      // Small loss - mixed symbols (but still get something back)
+      multiplier = 0.3
+      resultSymbols = [symbols[0], symbols[1], symbols[2]] // Mixed symbols
+    } else if (random < cum2) {
+      // Lose half - cherry match
+      multiplier = 0.5
+      resultSymbols = ['🍒', '🍒', '🍒']
+    } else if (random < cum3) {
+      // Break even - lemon match
+      multiplier = 1.0
+      resultSymbols = ['🍋', '🍋', '🍋']
+    } else if (random < cum4) {
+      // Small win - orange match
+      multiplier = 2.0
+      resultSymbols = ['🍊', '🍊', '🍊']
+    } else if (random < cum5) {
+      // Medium win - bell match
+      multiplier = 3.0
+      resultSymbols = ['🔔', '🔔', '🔔']
+    } else if (random < cum6) {
+      // Good win - diamond match
+      multiplier = 5.0
+      resultSymbols = ['💎', '💎', '💎']
+    } else if (random < cum7) {
+      // Great win - double diamond
+      multiplier = 10.0
+      resultSymbols = ['💎', '💎', '7']
+    } else {
+      // Jackpot - triple seven
+      multiplier = 15.0
+      resultSymbols = ['7', '7', '7']
+    }
+    
+    return {
+      multiplier,
+      symbols: resultSymbols,
+      payout: bet * multiplier
+    }
+  }
+
+  const handleSpin = async () => {
+    if (isSpinning || currentWallet.balance.cc < betAmount) return
+    
+    setIsSpinning(true)
+    setShowIdleAnimation(false)
+    
+    // Clear any pending idle animation restart
+    if (idleAnimationTimeoutRef.current) {
+      clearTimeout(idleAnimationTimeoutRef.current)
+      idleAnimationTimeoutRef.current = null
+    }
+    
+    // Deduct bet amount immediately
+    const newCCBalance = currentWallet.balance.cc - betAmount
+    const newUSDBalance = newCCBalance * ccPrice
+    updateWalletBalance(selectedWalletIndex, { 
+      cc: newCCBalance, 
+      usd: newUSDBalance,
+      cusd: currentWallet.balance.cusd 
+    })
+    
+    // Spin animation (random symbols cycling)
+    const spinDuration = 2000 // 2 seconds
+    const interval = 100
+    const spinInterval = setInterval(() => {
+      setReels([
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)],
+        symbols[Math.floor(Math.random() * symbols.length)]
+      ])
+    }, interval)
+    
+    // Calculate result
+    const result = calculateSpinResult(betAmount)
+    
+    // Stop spinning and show result
+    setTimeout(() => {
+      clearInterval(spinInterval)
+      setReels(result.symbols)
+      
+      // Update wallet balance with payout
+      if (result.payout > 0) {
+        const finalCCBalance = newCCBalance + result.payout
+        const finalUSDBalance = finalCCBalance * ccPrice
+        updateWalletBalance(selectedWalletIndex, { 
+          cc: finalCCBalance, 
+          usd: finalUSDBalance,
+          cusd: currentWallet.balance.cusd 
+        })
+      }
+      
+      setIsSpinning(false)
+      
+      // Update last payout display
+      setLastPayout(result.payout)
+      
+      // Show win popup for big wins (3x or more)
+      if (result.multiplier >= 3) {
+        setWinAmount(result.payout) // Total payout amount
+        setWinMultiplier(result.multiplier)
+        setShowWinPopup(true)
+        
+        // Auto-hide popup after 3 seconds
+        setTimeout(() => setShowWinPopup(false), 3000)
+      }
+      
+      // Restart idle animation after a delay
+      idleAnimationTimeoutRef.current = setTimeout(() => {
+        setShowIdleAnimation(true)
+        idleAnimationTimeoutRef.current = null
+      }, 5000)
+    }, spinDuration)
+  }
+
   return (
-    <main className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden ${
-      theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-200'
-    }`}>
+    <main 
+      className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden ${
+        theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-200'
+      }`}
+      onMouseMove={handleMouseMove}
+    >
       {/* Theme Toggle Button - Bottom Right */}
       <button
         onClick={toggleTheme}
@@ -115,12 +338,12 @@ function WalletPageContent() {
         )}
       </button>
       
-      {/* Header - Ascii on left, Txn history on right */}
-      <div className="absolute top-8 left-8 right-8 flex justify-between items-start z-20">
+      {/* Header - Triangle on left, Txn history on right */}
+      <div className="absolute top-8 left-8 right-8 flex justify-between items-start z-40">
         <div className="flex flex-col">
           <h1 className={`text-7xl font-bold transition-colors ${
             theme === 'dark' ? 'text-white' : 'text-black'
-          }`}>Ascii</h1>
+          }`}>Triangle</h1>
           <div className="flex items-center gap-3 mt-2">
             {/* Wallet Dropdown */}
             <div className="relative flex items-center">
@@ -256,47 +479,96 @@ function WalletPageContent() {
         </button>
       </div>
 
-      {/* Main Content Container - Animates vertically */}
+      {/* Main Content Container - Animates vertically only for XFER */}
       <motion.div 
-        className="flex-1 flex flex-col items-center justify-center"
+        className="flex-1 flex flex-col items-center justify-center relative"
         animate={{
-          y: activePanel ? -20 : 0
+          y: activePanel === 'xfer' ? 20  : 0
         }}
         transition={{
-          duration: 0.5,
-          ease: [0.25, 0.1, 0.25, 1]
+          duration: 0.4,
+          ease: "easeInOut"
         }}
       >
         {/* Wallet Balance Section */}
-        <div className="text-center mb-8">
+        <motion.div 
+          className="text-center"
+          animate={{
+            x: activePanel === 'trade' ? '-100%' : 0,
+            scale: activePanel === 'trade' ? 0.5 : activePanel === 'spin' ? 0 : 1,
+            opacity: activePanel === 'spin' ? 0 : 1
+          }}
+          transition={{
+            duration: 0.6,
+            ease: "easeInOut"
+          }}
+        >
           <h2 className={`text-8xl font-bold mb-12 transition-colors ${
             theme === 'dark' ? 'text-white' : 'text-black'
           }`}>Wallet Balance</h2>
           
           <div className="mb-12">
-            <p className={`text-7xl transition-colors ${
-              theme === 'dark' ? 'text-[#ccc]' : 'text-gray-600'
-            }`}>
-              {currentWallet.balance.cc.toFixed(4)} CC
-            </p>
-            <p className={`text-5xl mt-2 transition-colors ${
-              theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
-            }`}>
+            <div className="flex justify-center">
+              <motion.p 
+                className={`text-7xl transition-colors ${
+                  theme === 'dark' ? 'text-[#ccc]' : 'text-gray-600'
+                }`}
+                animate={{
+                  x: 0
+                }}
+                transition={{
+                  duration: 0.4,
+                  ease: "easeInOut"
+                }}
+              >
+                {currentWallet.balance.cc.toFixed(4)} CC
+              </motion.p>
+            </div>
+            <div className="flex justify-center mt-4">
+              <motion.p 
+                className={`text-6xl transition-colors ${
+                  theme === 'dark' ? 'text-[#aaa]' : 'text-gray-500'
+                }`}
+                animate={{
+                  x: 0,
+                  opacity: activePanel === 'trade' ? 0.7 : 1
+                }}
+                transition={{
+                  duration: 0.4,
+                  ease: "easeInOut"
+                }}
+              >
+                {currentWallet.balance.cusd.toFixed(4)} CUSD
+              </motion.p>
+            </div>
+            <motion.p 
+              className={`text-5xl mt-2 transition-colors text-center ${
+                theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
+              }`}
+              animate={{
+                opacity: activePanel ? 0 : 1,
+                height: activePanel === 'xfer' ? 0 : 'auto',
+                marginTop: activePanel === 'xfer' ? 0 : '0.5rem'
+              }}
+              transition={{
+                duration: 0.4,
+                ease: "easeInOut"
+              }}
+            >
               ${currentWallet.balance.usd.toFixed(2)}
-            </p>
+            </motion.p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-8 justify-center items-center">
+          <div className="flex gap-8 items-center justify-center">
             <motion.button
               animate={{ 
                 x: activePanel === 'xfer' ? 110 : 0,
-                opacity: activePanel === 'buy' ? 0 : 1,
-                scale: activePanel === 'buy' ? 0.95 : 1
+                opacity: activePanel === 'trade' ? 0 : 1
               }}
               transition={{ 
-                duration: 0.35, 
-                ease: [0.4, 0, 0.2, 1]
+                duration: 0.4, 
+                ease: "easeInOut"
               }}
               onClick={() => togglePanel('xfer')}
               className={`px-16 py-6 font-bold text-2xl rounded-lg ${
@@ -308,67 +580,615 @@ function WalletPageContent() {
                     ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
                     : 'bg-gray-400 hover:bg-gray-500 text-white'
               }`}
-              style={{ pointerEvents: activePanel === 'buy' ? 'none' : 'auto' }}
+              style={{ pointerEvents: activePanel === 'trade' ? 'none' : 'auto' }}
             >
               XFER
             </motion.button>
             
             <motion.button
               animate={{ 
-                x: activePanel === 'buy' ? -110 : 0,
-                opacity: activePanel === 'xfer' ? 0 : 1,
-                scale: activePanel === 'xfer' ? 0.95 : 1
+                x: activePanel === 'xfer' ? 110 : 0,
+                opacity: activePanel === 'xfer' || activePanel === 'trade' ? 0 : 1
               }}
               transition={{ 
-                duration: 0.35, 
-                ease: [0.4, 0, 0.2, 1]
+                duration: 0.4, 
+                ease: "easeInOut"
               }}
-              onClick={() => togglePanel('buy')}
+              onClick={() => togglePanel('trade')}
               className={`px-16 py-6 font-bold text-2xl rounded-lg ${
-                activePanel === 'buy'
-                  ? theme === 'dark'
-                    ? 'bg-[#4a4a4a] text-white ring-2 ring-white ring-opacity-50'
-                    : 'bg-gray-500 text-white ring-2 ring-gray-700 ring-opacity-30'
-                  : theme === 'dark' 
-                    ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
-                    : 'bg-gray-400 hover:bg-gray-500 text-white'
+                theme === 'dark' 
+                  ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white' 
+                  : 'bg-gray-400 hover:bg-gray-500 text-white'
               }`}
-              style={{ pointerEvents: activePanel === 'xfer' ? 'none' : 'auto' }}
+              style={{ pointerEvents: activePanel === 'trade' || activePanel === 'xfer' ? 'none' : 'auto' }}
             >
-              BUY
+              TRADE
             </motion.button>
           </div>
-        </div>
-
-        {/* Expanding Panels Container */}
-        <AnimatePresence mode="wait">
-          {activePanel && (
+        </motion.div>
+        
+        {/* XFER Panel - Expands below */}
+        <AnimatePresence>
+          {activePanel === 'xfer' && (
             <motion.div
-              key={activePanel}
+              key="xfer"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{
                 duration: 0.4,
-                ease: [0.25, 0.1, 0.25, 1]
+                ease: "easeInOut"
               }}
               className="w-full max-w-4xl overflow-hidden"
             >
               <div className="pt-8 pb-12">
-                {activePanel === 'xfer' && (
-                  <XferModal isOpen={true} onClose={() => setActivePanel(null)} />
-                )}
-                {activePanel === 'buy' && (
-                  <BuyModal isOpen={true} onClose={() => setActivePanel(null)} />
-                )}
+                <XferModal isOpen={true} onClose={() => setActivePanel(null)} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
       </motion.div>
 
+      {/* TRADE Panel - Slides in from right to center */}
+      <AnimatePresence>
+        {activePanel === 'trade' && (
+          <motion.div
+            key="trade"
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{
+              duration: 0.6,
+              ease: "easeInOut"
+            }}
+            className="fixed inset-0 flex items-center justify-center z-30 pointer-events-none"
+          >
+            <div className="w-full max-w-xl pointer-events-auto relative">
+              <button
+                onClick={() => setActivePanel(null)}
+                className={`absolute -top-12 right-0 p-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'hover:bg-[#2a2a2a] text-white' 
+                    : 'hover:bg-gray-200 text-black'
+                }`}
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+              <TradeModal isOpen={true} onClose={() => setActivePanel(null)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Slot Machine SPIN Button - Bottom Left */}
+      <motion.div 
+        className="fixed bottom-8 left-8 z-40"
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: activePanel === 'spin' ? 0 : 1,
+          scale: activePanel === 'spin' ? 0.8 : 1
+        }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        style={{ pointerEvents: activePanel === 'spin' ? 'none' : 'auto' }}
+      >
+        <button
+          onClick={() => togglePanel('spin')}
+          className="relative group"
+        >
+          {/* Slot Machine Container */}
+          <div className={`relative transition-all duration-300 ${
+            theme === 'dark' 
+              ? 'bg-[#2a2a2a] border-2 border-[#4a4a4a]' 
+              : 'bg-white border-2 border-gray-400'
+          } rounded-lg p-2 pb-3 group-hover:scale-105`}>
+            
+            {/* Slot Machine Display */}
+            <div className={`flex gap-1 p-1.5 rounded mb-2 ${
+              theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'
+            } border ${
+              theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
+            }`}>
+              {/* Slot Reels */}
+              {[0, 1, 2].map((index) => (
+                <div 
+                  key={index}
+                  className={`w-10 h-12 rounded flex items-center justify-center font-bold text-lg ${
+                    theme === 'dark' 
+                      ? 'bg-[#f5f5f5] text-[#1a1a1a] border border-[#999]' 
+                      : 'bg-white text-black border border-gray-400'
+                  }`}
+                >
+                  <motion.div
+                    animate={{ 
+                      y: [0, -15, 0],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 3,
+                      delay: index * 0.15,
+                      ease: "easeInOut"
+                    }}
+                    className="font-mono"
+                  >
+                    $
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+            
+            {/* SPIN Text */}
+            <div className={`text-center font-bold text-xs tracking-wider ${
+              theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
+            }`}>
+              SPIN
+            </div>
+            
+            {/* Side handle */}
+            <div className={`absolute -right-1.5 top-[40%] -translate-y-1/2 w-0.5 h-6 rounded-full ${
+              theme === 'dark' ? 'bg-[#4a4a4a]' : 'bg-gray-400'
+            }`}>
+              <div className={`absolute -top-1 -right-0.5 w-2 h-2 rounded-full ${
+                theme === 'dark' ? 'bg-[#5a5a5a]' : 'bg-gray-500'
+              }`}></div>
+            </div>
+            
+            {/* Subtle glow on hover */}
+            <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ${
+              theme === 'dark' 
+                ? 'shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                : 'shadow-[0_0_15px_rgba(0,0,0,0.1)]'
+            }`}/>
+          </div>
+        </button>
+      </motion.div>
+
+      {/* Animated Gradient Background - Shows when spin panel is active */}
+      <AnimatePresence>
+        {activePanel === 'spin' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-20 gradient-animated-bg"
+            style={{
+              '--gradient-color-1': getGradientColors().layer1,
+              '--gradient-color-2': getGradientColors().layer2,
+              '--gradient-color-3': getGradientColors().layer3,
+            } as React.CSSProperties}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* SPIN Panel - Slot Machine Feature */}
+      <AnimatePresence>
+        {activePanel === 'spin' && (
+          <motion.div
+            key="spin"
+            initial={{ scale: 0, opacity: 0, rotateY: -90 }}
+            animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+            exit={{ scale: 0, opacity: 0, rotateY: 90 }}
+            transition={{
+              duration: 0.8,
+              ease: [0.43, 0.13, 0.23, 0.96]
+            }}
+            className="fixed inset-0 z-30 pointer-events-none flex items-center justify-center"
+          >
+            <div className="relative pointer-events-auto">
+              {/* Close Button */}
+              <button
+                onClick={() => setActivePanel(null)}
+                className={`absolute -top-14 right-0 p-3 transition-all z-40 hover:scale-110 ${
+                  theme === 'dark' 
+                    ? 'text-white hover:text-gray-300' 
+                    : 'text-black hover:text-gray-600'
+                }`}
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+
+              {/* Large Slot Machine */}
+              <motion.div 
+                className="relative"
+                style={{
+                  borderRadius: '24px 24px 16px 16px',
+                  background: theme === 'dark'
+                    ? 'linear-gradient(145deg, #4a4a4a 0%, #3a3a3a 30%, #2a2a2a 60%, #1a1a1a 100%)'
+                    : 'linear-gradient(145deg, #f5f5f5 0%, #e0e0e0 30%, #d0d0d0 60%, #b0b0b0 100%)',
+                  boxShadow: theme === 'dark'
+                    ? '0 20px 50px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.1), inset 0 -3px 6px rgba(0,0,0,0.3)'
+                    : '0 20px 50px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.8), inset 0 -3px 6px rgba(0,0,0,0.15)',
+                  border: theme === 'dark' ? '3px solid #5a5a5a' : '3px solid #a0a0a0',
+                  padding: '0',
+                  overflow: 'visible',
+                  willChange: 'transform'
+                }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                {/* Rounded Top Panel with Title */}
+                <div 
+                  className="relative px-8 py-6"
+                  style={{
+                    background: theme === 'dark'
+                      ? 'linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%)'
+                      : 'linear-gradient(180deg, #e5e5e5 0%, #d0d0d0 100%)',
+                    borderBottom: theme === 'dark' ? '3px solid #1a1a1a' : '3px solid #a0a0a0',
+                    borderRadius: '24px 24px 0 0',
+                    boxShadow: theme === 'dark'
+                      ? 'inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.5)'
+                      : 'inset 0 2px 4px rgba(255,255,255,0.8), 0 4px 8px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  <motion.h1 
+                    className="text-4xl font-black text-center tracking-wider"
+                    style={{
+                      color: theme === 'dark' ? '#e0e0e0' : '#2a2a2a',
+                      textShadow: theme === 'dark'
+                        ? '0 2px 4px rgba(0,0,0,0.8), 0 -1px 1px rgba(255,255,255,0.1)'
+                        : '0 2px 4px rgba(0,0,0,0.2), 0 -1px 1px rgba(255,255,255,0.9)'
+                    }}
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    TRIANGLE SLOTS
+                  </motion.h1>
+                </div>
+
+                {/* Main Body */}
+                <div className="px-8 py-6 pb-10"
+                  style={{
+                    background: theme === 'dark'
+                      ? 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)'
+                      : 'linear-gradient(180deg, #d0d0d0 0%, #b0b0b0 100%)',
+                    borderRadius: '0 0 16px 16px',
+                    overflow: 'hidden'
+                  }}
+                >
+                {/* Metallic shine overlay */}
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: theme === 'dark'
+                      ? 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 30%, transparent 50%, rgba(255,255,255,0.08) 80%, transparent 100%)'
+                      : 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.6) 30%, transparent 50%, rgba(255,255,255,0.8) 80%, transparent 100%)',
+                    borderRadius: '24px 24px 16px 16px'
+                  }}
+                />
+                
+                {/* Slot Machine Display Window - Deep Inset */}
+                <div className="relative rounded-xl mb-6"
+                  style={{
+                    background: theme === 'dark' ? '#0a0a0a' : '#1a1a1a',
+                    padding: '24px',
+                    boxShadow: theme === 'dark'
+                      ? 'inset 0 6px 12px rgba(0,0,0,0.8), inset 0 -2px 4px rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.5)'
+                      : 'inset 0 6px 12px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.3)',
+                    border: theme === 'dark' ? '4px solid #1a1a1a' : '4px solid #2a2a2a'
+                  }}
+                >
+                  <div className="flex gap-4 justify-center">
+                    {/* Slot Reels */}
+                    {[0, 1, 2].map((index) => (
+                      <motion.div 
+                        key={index}
+                        className={`w-32 h-40 rounded-xl flex items-center justify-center font-bold text-6xl overflow-hidden ${
+                          theme === 'dark' 
+                            ? 'bg-gradient-to-b from-white to-gray-200 text-black border-4 border-gray-600 shadow-inner' 
+                            : 'bg-gradient-to-b from-white to-gray-100 text-black border-4 border-gray-400 shadow-inner'
+                        }`}
+                        initial={{ y: -50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
+                      >
+                      <motion.div
+                        animate={!isSpinning && showIdleAnimation ? {
+                          y: [0, -10, 10, -8, 8, 0],
+                        } : {
+                          y: 0
+                        }}
+                        transition={!isSpinning && showIdleAnimation ? {
+                          duration: 3,
+                          repeat: Infinity,
+                          repeatDelay: 10,
+                          delay: index * 0.3,
+                          ease: "easeInOut"
+                        } : {
+                          duration: 0
+                        }}
+                        className="font-mono"
+                      >
+                        {reels[index]}
+                      </motion.div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  
+                  {/* Win Line Indicator */}
+                  <div className={`absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 ${
+                    theme === 'dark' ? 'bg-yellow-400' : 'bg-yellow-500'
+                  } opacity-30`}></div>
+                </div>
+
+                {/* Control Panel */}
+                <div className="mb-6">
+                  {/* Top Row - Won and Bet */}
+                  <div className="flex justify-between items-center gap-3 mb-3">
+                    {/* Won Display - Inset Panel */}
+                    <div className="px-6 py-3 rounded-lg flex-1"
+                      style={{
+                        background: theme === 'dark' ? '#1a1a1a' : '#2a2a2a',
+                        boxShadow: theme === 'dark'
+                          ? 'inset 0 4px 8px rgba(0,0,0,0.7), inset 0 -1px 2px rgba(255,255,255,0.05)'
+                          : 'inset 0 4px 8px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.1)',
+                        border: theme === 'dark' ? '2px solid #0a0a0a' : '2px solid #1a1a1a'
+                      }}
+                    >
+                      <p className="text-xs font-semibold tracking-wider" style={{ color: '#888' }}>WON</p>
+                      <p className="text-2xl font-bold" style={{ 
+                        color: lastPayout > 0 ? '#4ade80' : theme === 'dark' ? '#e0e0e0' : '#f0f0f0',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+                      }}>
+                        {lastPayout.toFixed(2)} CC
+                      </p>
+                    </div>
+
+                    {/* Bet Display - Inset Panel */}
+                    <div className="px-6 py-3 rounded-lg flex-1"
+                      style={{
+                        background: theme === 'dark' ? '#1a1a1a' : '#2a2a2a',
+                        boxShadow: theme === 'dark'
+                          ? 'inset 0 4px 8px rgba(0,0,0,0.7), inset 0 -1px 2px rgba(255,255,255,0.05)'
+                          : 'inset 0 4px 8px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.1)',
+                        border: theme === 'dark' ? '2px solid #0a0a0a' : '2px solid #1a1a1a'
+                      }}
+                    >
+                      <p className="text-xs font-semibold tracking-wider" style={{ color: '#888' }}>BET</p>
+                      <p className="text-2xl font-bold" style={{ 
+                        color: theme === 'dark' ? '#e0e0e0' : '#f0f0f0',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+                      }}>
+                        {betAmount} CC
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom Row - Balance (smaller) */}
+                  <div className="px-4 py-2 rounded-lg"
+                    style={{
+                      background: theme === 'dark' ? '#1a1a1a' : '#2a2a2a',
+                      boxShadow: theme === 'dark'
+                        ? 'inset 0 3px 6px rgba(0,0,0,0.7), inset 0 -1px 2px rgba(255,255,255,0.05)'
+                        : 'inset 0 3px 6px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.1)',
+                      border: theme === 'dark' ? '2px solid #0a0a0a' : '2px solid #1a1a1a'
+                    }}
+                  >
+                    <p className="text-xs font-semibold tracking-wider text-center" style={{ color: '#888' }}>BALANCE</p>
+                    <p className="text-lg font-bold text-center" style={{ 
+                      color: theme === 'dark' ? '#e0e0e0' : '#f0f0f0',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+                    }}>
+                      {currentWallet.balance.cc.toFixed(2)} CC
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bet Selection */}
+                <div className="flex gap-3 justify-center mb-6">
+                  {[1, 10, 100, 1000].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => setBetAmount(amount)}
+                      className={`relative px-6 py-3 rounded-lg font-bold text-lg transition-all duration-150 ${
+                        betAmount === amount ? 'translate-y-0.5' : 'hover:translate-y-0.5'
+                      }`}
+                      style={{
+                        background: betAmount === amount
+                          ? 'linear-gradient(180deg, #ffd700 0%, #f4c430 50%, #daa520 100%)'
+                          : 'linear-gradient(180deg, #f4c430 0%, #daa520 60%, #c4941f 100%)',
+                        boxShadow: betAmount === amount
+                          ? 'inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.2)'
+                          : '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.2)',
+                        border: betAmount === amount
+                          ? '2px solid #b8860b'
+                          : '2px solid #c4941f',
+                        color: '#2a2210',
+                        textShadow: '0 1px 1px rgba(0,0,0,0.3)'
+                      }}
+                    >
+                      {amount} CC
+                    </button>
+                  ))}
+                </div>
+
+                {/* Spin Button - Large Golden Button */}
+                <motion.button
+                  onClick={handleSpin}
+                  disabled={isSpinning || currentWallet.balance.cc < betAmount}
+                  whileHover={{ scale: isSpinning ? 1 : 1.01 }}
+                  whileTap={{ scale: isSpinning ? 1 : 0.99 }}
+                  className="w-full py-6 rounded-xl font-black text-3xl tracking-wider relative mb-2"
+                  style={{
+                    background: isSpinning || currentWallet.balance.cc < betAmount
+                      ? 'linear-gradient(180deg, #888 0%, #666 50%, #444 100%)'
+                      : 'linear-gradient(180deg, #ffd700 0%, #f4c430 30%, #daa520 70%, #c4941f 100%)',
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.2)',
+                    border: '2px solid #c4941f',
+                    color: '#2a2210',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.4)',
+                    cursor: isSpinning || currentWallet.balance.cc < betAmount ? 'not-allowed' : 'pointer',
+                    opacity: isSpinning || currentWallet.balance.cc < betAmount ? 0.6 : 1
+                  }}
+                >
+                  {isSpinning ? 'SPINNING...' : 'SPIN TO WIN'}
+                </motion.button>
+                </div>
+
+                {/* Slot Machine Pull Lever - Right Side */}
+                {/* Lever Arm and Bottom Handle - Behind machine */}
+                <div 
+                  className="absolute -right-8 top-[20%] -z-10"
+                  style={{
+                    zIndex: -1
+                  }}
+                >
+                  {/* Vertical Arm - Static */}
+                  <div 
+                    className="relative w-6 h-52 rounded-full"
+                    style={{
+                      background: 'linear-gradient(90deg, #5a5a5a 0%, #4a4a4a 20%, #3a3a3a 50%, #2a2a2a 80%, #1a1a1a 100%)',
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.8), inset 2px 0 3px rgba(255,255,255,0.2), inset -2px 0 3px rgba(0,0,0,0.5)',
+                      border: '2px solid #6a6a6a'
+                    }}
+                  >
+                    {/* Horizontal Handle Bar at bottom */}
+                    <div 
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-6 rounded-full"
+                      style={{
+                        background: 'linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 20%, #3a3a3a 50%, #2a2a2a 80%, #1a1a1a 100%)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.7), inset 0 2px 3px rgba(255,255,255,0.2), inset 0 -2px 3px rgba(0,0,0,0.5)',
+                        border: '2px solid #6a6a6a'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                {/* Red Ball Handle - In front of machine */}
+                <div 
+                  className="absolute -right-8 top-[20%]"
+                  style={{
+                    zIndex: 50
+                  }}
+                >
+                  <div 
+                    className="absolute -top-6 w-14 h-14 rounded-full"
+                    style={{
+                      left: '-39px',
+                      background: 'radial-gradient(circle at 35% 35%, #ff5555 0%, #ff3333 15%, #ee2222 30%, #dc2626 45%, #cc1111 60%, #aa1111 75%, #991b1b 85%, #7f1d1d 100%)',
+                      boxShadow: '0 6px 12px rgba(0,0,0,0.7), inset -3px -3px 6px rgba(0,0,0,0.6), inset 3px 3px 6px rgba(255,120,120,0.5), 0 0 20px rgba(220,38,38,0.3)',
+                      border: '3px solid #8b1f1f'
+                    }}
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Winnings Popup */}
+      <AnimatePresence>
+        {showWinPopup && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0, opacity: 0, y: -50 }}
+            transition={{ 
+              type: "spring",
+              stiffness: 300,
+              damping: 20
+            }}
+            className="fixed inset-0 flex items-center justify-center z-[60] pointer-events-none"
+          >
+            <div 
+              className="relative px-12 py-8 rounded-2xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #ffd700 0%, #ffed4e 20%, #ffd700 40%, #f4c430 60%, #daa520 80%, #d4af37 100%)',
+                boxShadow: '0 10px 40px rgba(255, 215, 0, 0.6), 0 0 60px rgba(255, 215, 0, 0.4), inset 0 2px 4px rgba(255,255,255,0.5)',
+                border: '4px solid #b8860b'
+              }}
+            >
+              {/* Sparkle effects */}
+              <motion.div
+                animate={{ 
+                  rotate: [0, 360],
+                  scale: [1, 1.2, 1]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+                className="absolute -top-4 -right-4 text-4xl"
+              >
+                ✨
+              </motion.div>
+              <motion.div
+                animate={{ 
+                  rotate: [360, 0],
+                  scale: [1, 1.3, 1]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+                className="absolute -bottom-4 -left-4 text-4xl"
+              >
+                ✨
+              </motion.div>
+              
+              <motion.div
+                initial={{ scale: 0.5 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
+                className="text-center"
+              >
+                <p className="text-6xl font-black mb-2" style={{
+                  color: '#2a2210',
+                  textShadow: '0 3px 6px rgba(0,0,0,0.5), 0 -1px 2px rgba(255,255,255,0.5)'
+                }}>
+                  BIG WIN!
+                </p>
+                <p className="text-5xl font-bold mb-2" style={{
+                  color: '#3a3020',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.4)'
+                }}>
+                  {winMultiplier.toFixed(1)}x
+                </p>
+                <p className="text-4xl font-bold" style={{
+                  color: '#2a2210',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  +{winAmount.toFixed(2)} CC
+                </p>
+              </motion.div>
+
+              {/* Shine effect */}
+              <motion.div
+                animate={{
+                  x: ['-200%', '200%']
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  repeatDelay: 0.5,
+                  ease: "easeInOut"
+                }}
+                className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+                  width: '30%'
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Bottom - FDV */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center z-10">
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center z-40">
         <p className={`text-2xl transition-colors ${
           theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
         }`}>
