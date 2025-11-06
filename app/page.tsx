@@ -113,12 +113,12 @@ export default function Home() {
           <motion.div
             className="absolute inset-0"
             initial={{ opacity: 0 }}
-            animate={!isLoading ? { opacity: isScrolling ? 0 : 1 } : { opacity: 0 }}
-            transition={{ duration: isScrolling ? 0.3 : 0.5 }}
+            animate={!isLoading ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.5 }}
             style={{ display: isScrolling ? 'none' : 'block' }}
           >
-            <NeonIsometricMaze 
-              onGlitchComplete={handleGlitchComplete} 
+            <NeonIsometricMaze
+              onGlitchComplete={handleGlitchComplete}
               onButtonClick={handleButtonClick}
               onLoadComplete={handleLoadComplete}
               isScrolling={isScrolling}
