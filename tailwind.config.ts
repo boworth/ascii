@@ -11,7 +11,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Nimbus Sans L"', "Arial", "sans-serif"],
+        sans: ["var(--font-inter)", "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text", "system-ui", "sans-serif"],
+        mono: ["var(--font-roboto-mono)", "SF Mono", "Monaco", "Consolas", "monospace"],
       },
       colors: {
         background: "hsl(var(--background))",

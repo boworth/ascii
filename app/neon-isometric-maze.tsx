@@ -18,21 +18,24 @@ interface IsometricMazeProps {
   onGlitchComplete: () => void
   onButtonClick: () => void
   onLoadComplete?: () => void
-  isScrolling?: boolean
+  isGlitchComplete?: boolean
 }
 
-const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onButtonClick, onLoadComplete, isScrolling = false }) => {
+const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onButtonClick, onLoadComplete, isGlitchComplete: isGlitchCompleteProp = false }) => {
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [isGlitching, setIsGlitching] = useState(false)
+  const [titleColor, setTitleColor] = useState('#ffffff')
+  const titleRef = useRef<HTMLHeadingElement>(null)
   const glitchMapRef = useRef<GlitchCell[]>([])
   const frameCountRef = useRef(0)
   const initialImageDataRef = useRef<ImageData | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const processingOffsetRef = useRef(0)
   const glitchCompleteRef = useRef(false)
+  const fadeCompleteRef = useRef(false)
   const [isCollapsing, setIsCollapsing] = useState(false)
   const [showButtons, setShowButtons] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -43,6 +46,21 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const [isTitleAnimating, setIsTitleAnimating] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920)
   const mobileBreakpoint = 1400 // Switch to mobile layout much earlier
+  
+  // Initialize title color - now handled directly via DOM manipulation in draw function
+  useEffect(() => {
+    // Use a small delay to ensure the ref is attached
+    const timer = setTimeout(() => {
+      if (titleRef.current) {
+        titleRef.current.style.setProperty('color', '#ffffff', 'important')
+        console.log('Title ref initialized, set to white')
+      } else {
+        console.log('Title ref not found during initialization!')
+      }
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [])
 
   // Pre-define character arrays to avoid recreating them
   const glitchSequenceChars = ["+", "=", "-", ":", ".", " "]
@@ -55,6 +73,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       frameCountRef.current = 0
       processingOffsetRef.current = 0 // Reset processing offset
       glitchCompleteRef.current = false // Reset completion tracker
+      fadeCompleteRef.current = false // Reset fade completion
 
       if (canvasRef.current) {
         // Dynamically adjust columns based on screen width for consistent performance
@@ -259,10 +278,10 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       const completionPercentage = (blackCount / infectedCount) * 100
 
       // Consider complete if we're at 99%+ completion or at frame 150+
-      // Reduced from 345 to 150 to trigger earlier
+      // But don't call onGlitchComplete until fade is mostly done
       const isComplete = completionPercentage > 99 || frameCountRef.current > 150
 
-      if (isComplete) {
+      if (isComplete && frameCountRef.current > 110) { // Wait until fade is mostly complete (70 + ~40 frames)
         console.log(
           `Glitch complete at frame ${frameCountRef.current}: ${blackCount}/${infectedCount} cells (${completionPercentage.toFixed(2)}%)`,
         )
@@ -286,6 +305,14 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     
     const draw = () => {
       if (!ctx || !video || !isVideoLoaded) return
+      
+      // If fade is complete, just keep showing white background
+      if (fadeCompleteRef.current) {
+        ctx.fillStyle = "rgba(255, 255, 255, 1)"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        animationFrameRef.current = requestAnimationFrame(draw)
+        return
+      }
 
       // Skip frames to reduce CPU usage
       frameSkipCounter++
@@ -517,27 +544,58 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         if (isGlitching) {
           frameCountRef.current++
 
-          // Reduce the glitch effect duration from 350 to 200 frames
-          if (frameCountRef.current > 200) {
-            ctx.fillStyle = "rgba(0, 0, 0, 1)"
+          // Start fading much earlier - right after glitch mostly completes
+          if (frameCountRef.current > 70) {
+            // Calculate fade progress (0 to 1) over 70 frames (1.17 second fade)
+            const fadeStartFrame = 70
+            const fadeDuration = 70
+            const fadeProgress = Math.min((frameCountRef.current - fadeStartFrame) / fadeDuration, 1)
+            
+            // Fade background from black (0) to white (255)
+            const colorValue = Math.floor(255 * fadeProgress)
+            ctx.fillStyle = `rgba(${colorValue}, ${colorValue}, ${colorValue}, 1)`
             ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-            setTimeout(() => {
-              setIsGlitching(false)
-              frameCountRef.current = 0
-              initialImageDataRef.current = null
-              processingOffsetRef.current = 0 // Reset processing offset
-              glitchCompleteRef.current = false // Reset completion tracker
-
-              // Don't completely reset the glitchMapRef, just reset the states
-              for (let i = 0; i < glitchMapRef.current.length; i++) {
-                if (glitchMapRef.current[i]) {
-                  glitchMapRef.current[i].isInfected = false
-                  glitchMapRef.current[i].glitchStage = 0
-                  glitchMapRef.current[i].fullyBlack = false
-                }
+            
+            // Synchronize title fade from white to black with background fade (ahead to stay in sync)
+            if (titleRef.current) {
+              const adjustedProgress = Math.min(fadeProgress + 0.08, 1) // More ahead to compensate for lag
+              const titleColorValue = Math.floor(255 * (1 - adjustedProgress)) // Inverted progress for title
+              const hex = titleColorValue.toString(16).padStart(2, '0')
+              const newColor = `#${hex}${hex}${hex}`
+              titleRef.current.style.setProperty('color', newColor, 'important')
+              
+              // Apply the same color fade to the logo image
+              const logoImg = titleRef.current.querySelector('img')
+              if (logoImg) {
+                const brightness = (1 - adjustedProgress) * 0.98 + 0.02 // From 1 to 0.02
+                const invert = adjustedProgress * 100 // From 0% to 100%
+                logoImg.style.filter = `invert(${invert}%) brightness(${brightness}) drop-shadow(0 0 8px rgba(${titleColorValue}, ${titleColorValue}, ${titleColorValue}, 0.3)) contrast(1.05)`
               }
-            }, 200)
+            }
+            
+            // Log the fade progress for both
+            if (frameCountRef.current === fadeStartFrame + 1) {
+              console.log('Starting synchronized fade: background to white, title to black')
+            }
+            if (frameCountRef.current === fadeStartFrame + fadeDuration) {
+              console.log('Synchronized fade complete - background white, title black')
+            }
+            
+            // Stop after fade is complete
+            if (frameCountRef.current > fadeStartFrame + fadeDuration + 10) {
+              // Keep the white background indefinitely - don't reset
+              ctx.fillStyle = "rgba(255, 255, 255, 1)"
+              ctx.fillRect(0, 0, canvas.width, canvas.height)
+              
+              // Title is already set to black
+              console.log('Background set to final white, title remains black')
+              
+              // Mark fade as complete to prevent further drawing
+              fadeCompleteRef.current = true
+              
+              // Don't reset the animation - keep the white screen until navigation
+              // This prevents the flash of ASCII background
+            }
           }
         }
       } catch (error) {
@@ -603,7 +661,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
 
   return (
     <React.Fragment>
-      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block" />
+      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block z-10" />
       <video
         ref={videoRef}
         src="/ocean-compressed.mp4"
@@ -616,16 +674,10 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         height="160"
       />
       {/* Always show the title container, but conditionally render buttons/modals */}
-      <motion.div 
-        className="fixed inset-0 flex items-center justify-center z-40"
-        animate={{
-          y: isScrolling ? -window.innerHeight : 0
-        }}
-        transition={{
-          duration: 2.0,
-          ease: [0.33, 1, 0.68, 1]
-        }}
+      <div 
+        className="fixed inset-0 flex items-center justify-center"
         style={{ 
+          zIndex: 100,
           pointerEvents: showLoginModal || showRegisterModal ? 'auto' : 'none',
           display: windowWidth < mobileBreakpoint && (showLoginModal || showRegisterModal) ? 'none' : 'flex'
         }}
@@ -634,7 +686,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         <motion.div 
           className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
           animate={{
-            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -300 : 0
+            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0
           }}
           transition={{
             duration: 0.5,
@@ -643,51 +695,59 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           style={{ pointerEvents: 'auto' }}
         >
           {/* Ascii Title */}
-          <motion.h1 
-            className="font-bold leading-none whitespace-nowrap mb-2 sm:mb-4 mx-auto block"
+          <motion.div
             initial={{
               scale: 1,
-              color: '#ffffff'
+              opacity: 1
             }}
             animate={{
               scale: isTitleAnimating ? 1.3 : 1,
-              color: isTitleAnimating ? '#000000' : '#ffffff'
+              opacity: 1 // Force opacity to stay at 1
             }}
             transition={{
-              scale: {
-                duration: 6.0,
-                ease: "linear"
-              },
-              color: {
-                duration: 1.5,
-                delay: 3.0,
-                ease: "easeInOut"
-              }
+              duration: 6.0,
+              ease: "linear"
             }}
             style={{
-              fontSize: 'clamp(6rem, 20vw, 14rem)'
+              zIndex: 200,
+              position: 'relative',
+              opacity: 1, // Ensure full opacity
+              marginTop: '-16rem'
             }}
           >
-            Triangle
-          </motion.h1>
-          
-          {/* Subtitle - animated */}
-          <AnimatePresence mode="wait">
-            {!showLoginModal && !showRegisterModal && showButtons && (
-              <motion.p 
-                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginBottom: '1.5rem' }}
-                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                transition={{ 
-                  duration: 0.3,
-                  ease: [0.4, 0, 0.2, 1] 
+            <div 
+              ref={titleRef}
+              className="mx-auto block flex items-center justify-center"
+              style={{
+                width: 'clamp(28rem, 70vw, 56rem)',
+                height: 'clamp(28rem, 70vw, 56rem)',
+                zIndex: 9999,
+                position: 'relative',
+                opacity: 1, // Explicit full opacity
+                marginBottom: '-12rem',
+                pointerEvents: 'none'
+              }}
+            >
+              <img 
+                src="/triangle-logo-clean.png" 
+                alt="Triangle Logo" 
+                className="w-full h-full object-contain"
+                style={{
+                  filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
+                  imageRendering: 'crisp-edges'
                 }}
-                className="text-white text-lg sm:text-xl md:text-2xl font-sans overflow-hidden px-4"
-              >
-                Worlds First Canton On Ramp
-              </motion.p>
-            )}
-          </AnimatePresence>
+              />
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
+                  mixBlendMode: 'multiply',
+                  opacity: 0.4
+                }}
+              />
+            </div>
+          </motion.div>
+          
           
           {/* Buttons - animated */}
           <AnimatePresence mode="wait">
@@ -701,16 +761,19 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
                     ease: [0.4, 0, 0.2, 1] 
                   }}
                   className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center overflow-hidden px-4"
+                  style={{ position: 'relative', zIndex: 10000, pointerEvents: 'auto' }}
                 >
                   <button
                     onClick={handleLoginClick}
-                    className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border-2 border-white text-white text-base sm:text-lg font-sans hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                    className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border-2 border-white text-white text-base sm:text-lg hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
                   >
                     Login
                   </button>
                   <button
                     onClick={handleCreateWalletClick}
-                    className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-black text-base sm:text-lg font-sans hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                    className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-black text-base sm:text-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
                   >
                     Create Wallet
                   </button>
@@ -718,22 +781,22 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               ) : null}
             </AnimatePresence>
           </motion.div>
-        </motion.div>
+        </div>
 
-        {/* Login Modal - positioned outside scrolling container */}
-        {showLoginModal && (
+      {/* Login Modal - positioned outside main container */}
+      {showLoginModal && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: 0.3,
+            ease: [0.4, 0, 0.2, 1]
+          }}
+        >
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-          >
-            <motion.div
-              className="relative flex flex-col items-center"
+            className="relative flex flex-col items-center"
               style={{ 
                 ...(windowWidth >= mobileBreakpoint ? { 
                   marginLeft: '700px'
@@ -757,14 +820,30 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             >
               {/* Show title above modal on mobile */}
               {windowWidth < mobileBreakpoint && (
-                <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
-                    style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
-                  Triangle
-                </h1>
+                <div className="mb-8 flex items-center justify-center relative" 
+                    style={{ width: 'clamp(12rem, 50vw, 32rem)', height: 'clamp(12rem, 50vw, 32rem)' }}>
+                  <img 
+                    src="/triangle-logo-clean.png" 
+                    alt="Triangle Logo" 
+                    className="w-full h-full object-contain"
+                    style={{
+                      filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
+                      imageRendering: 'crisp-edges'
+                    }}
+                  />
+                  <div 
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
+                      mixBlendMode: 'multiply',
+                      opacity: 0.4
+                    }}
+                  />
+                </div>
               )}
               <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-4 sm:p-6 md:p-8 w-[90vw] sm:w-[28rem] md:w-[32rem] max-w-[32rem]">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white">Login</h2>
+                  <h2 className="text-2xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>Login</h2>
                   <button
                     onClick={() => {
                       setShowLoginModal(false)
@@ -829,20 +908,20 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           </motion.div>
         )}
 
-        {/* Registration Modal - positioned outside scrolling container */}
-        {showRegisterModal && (
+      {/* Registration Modal - positioned outside main container */}
+      {showRegisterModal && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: 0.3,
+            ease: [0.4, 0, 0.2, 1]
+          }}
+        >
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.4, 0, 0.2, 1]
-            }}
-          >
-            <motion.div
-              className="relative flex flex-col items-center"
+            className="relative flex flex-col items-center"
               style={{ 
                 ...(windowWidth >= mobileBreakpoint ? { 
                   marginLeft: '700px'
@@ -866,21 +945,38 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             >
               {/* Show title above modal on mobile */}
               {windowWidth < mobileBreakpoint && (
-                <h1 className="font-bold text-white mb-8 leading-none whitespace-nowrap" 
-                    style={{ fontSize: 'clamp(6rem, 20vw, 14rem)' }}>
-                  Triangle
-                </h1>
+                <div className="mb-8 flex items-center justify-center relative" 
+                    style={{ width: 'clamp(12rem, 50vw, 32rem)', height: 'clamp(12rem, 50vw, 32rem)' }}>
+                  <img 
+                    src="/triangle-logo-clean.png" 
+                    alt="Triangle Logo" 
+                    className="w-full h-full object-contain"
+                    style={{
+                      filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
+                      imageRendering: 'crisp-edges'
+                    }}
+                  />
+                  <div 
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
+                      mixBlendMode: 'multiply',
+                      opacity: 0.4
+                    }}
+                  />
+                </div>
               )}
               <RegistrationModal
                 isOpen={showRegisterModal}
                 onClose={() => setShowRegisterModal(false)}
                 onSuccess={handleRegistrationSuccess}
               />
-            </motion.div>
           </motion.div>
-        )}
+        </motion.div>
+      )}
     </React.Fragment>
   )
 }
 
 export default NeonIsometricMaze
+

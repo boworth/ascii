@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, type MouseEvent } from "react"
+import { useState, useRef, useEffect, type MouseEvent } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import TransactionHistory from "./TransactionHistory"
 import XferModal from "./XferModal"
@@ -8,6 +8,173 @@ import TradeModal from "./TradeModal"
 import CreateWalletModal from "./CreateWalletModal"
 import { WalletProvider, useWallet, Wallet } from "./WalletContext"
 import { ThemeProvider, useTheme } from "./ThemeContext"
+
+// Animated Number Component with flip effect
+function AnimatedNumber({ value, previousValue, delay = 0, className = "" }: { value: string; previousValue?: string; delay?: number; className?: string }) {
+  const [displayValue, setDisplayValue] = useState(previousValue || "0")
+  const [visibleChars, setVisibleChars] = useState(0)
+
+  useEffect(() => {
+    const startDelay = setTimeout(() => {
+      const newChars = value.split('')
+      const timePerChar = 70 // Time to cycle and settle each character
+      const cycleTime = 20 // Time between number changes during cycling
+      
+      // Determine animation type
+      const isWalletSwitch = previousValue && previousValue !== "0"
+      const isPageLoad = !previousValue || previousValue === "0"
+      
+      if (isPageLoad) {
+        // PAGE LOAD ANIMATION: Original right-to-left build-up from "0"
+        let currentCharIndex = newChars.length - 1 // Start from rightmost
+        let currentCycle = 0
+        const cyclesPerChar = Math.floor(timePerChar / cycleTime)
+        
+        const interval = setInterval(() => {
+          const numVisible = newChars.length - currentCharIndex
+          
+          if (currentCharIndex >= 0) {
+            // Generate display string - only include visible characters
+            const displayChars = newChars.slice(currentCharIndex).map((char, sliceIndex) => {
+              const index = currentCharIndex + sliceIndex
+              
+              if (index === currentCharIndex) {
+                if (currentCycle < cyclesPerChar) {
+                  // Cycle through random digits during animation
+                  return char.match(/\d/) ? Math.floor(Math.random() * 10).toString() : char
+                } else {
+                  // Settled to final value
+                  return char
+                }
+              }
+              
+              // Already settled characters (to the right)
+              return char
+            }).join('')
+            
+            setDisplayValue(displayChars)
+            currentCycle++
+            
+            if (currentCycle >= cyclesPerChar) {
+              currentCharIndex--
+              currentCycle = 0
+            }
+          } else {
+            setDisplayValue(value)
+            clearInterval(interval)
+          }
+        }, cycleTime)
+
+        return () => clearInterval(interval)
+        
+      } else {
+        // WALLET SWITCH ANIMATION: Align integers at decimal, pad left, animate right-to-left
+        const oldString = previousValue
+        const newString = value
+        
+        // Split at decimal (assume always present with fixed decimals)
+        const [oldInteger, oldDecimal] = oldString.split('.')
+        const [newInteger, newDecimal] = newString.split('.')
+        
+        // Max integer length for left padding
+        const maxIntegerLength = Math.max(oldInteger.length, newInteger.length)
+        
+        // Pad integers on left with spaces
+        const paddedOldInteger = oldInteger.padStart(maxIntegerLength, ' ')
+        const paddedNewInteger = newInteger.padStart(maxIntegerLength, ' ')
+        
+        // Full padded strings (integer + '.' + decimal)
+        const paddedOld = paddedOldInteger + '.' + oldDecimal
+        const paddedNew = paddedNewInteger + '.' + newDecimal
+        const paddedLength = paddedOld.length
+        
+        // Start with previous value displayed
+        setDisplayValue(oldString)
+        
+        // Find positions that need changes
+        const positionsToChange: number[] = []
+        for (let i = 0; i < paddedLength; i++) {
+          if (paddedOld[i] !== paddedNew[i] && paddedNew[i] !== ' ') {
+            positionsToChange.push(i)
+          }
+        }
+        
+        // Force animation for identical values
+        if (positionsToChange.length === 0) {
+          for (let i = 0; i < paddedLength; i++) {
+            if (paddedNew[i].match(/\d/)) {
+              positionsToChange.push(i)
+            }
+          }
+        }
+        
+        console.log('Wallet switch animation:', { 
+          oldString, 
+          newString, 
+          paddedOld, 
+          paddedNew, 
+          positionsToChange 
+        })
+        
+        let currentCharIndex = Math.max(...positionsToChange)
+        let currentCycle = 0
+        const cyclesPerChar = Math.floor(timePerChar / cycleTime)
+        
+        const interval = setInterval(() => {
+          if (currentCharIndex >= 0) {
+            // Build padded display
+            const displayPadded = paddedOld.split('')
+            
+            for (let i = 0; i < paddedLength; i++) {
+              if (positionsToChange.includes(i)) {
+                if (i === currentCharIndex) {
+                  if (currentCycle < cyclesPerChar) {
+                    const targetChar = paddedNew[i]
+                    if (targetChar.match(/\d/)) {
+                      displayPadded[i] = Math.floor(Math.random() * 10).toString()
+                    } else {
+                      displayPadded[i] = targetChar
+                    }
+                  } else {
+                    displayPadded[i] = paddedNew[i]
+                  }
+                } else if (i > currentCharIndex) {
+                  displayPadded[i] = paddedNew[i]
+                }
+              }
+            }
+            
+            // Build final display string (remove leading spaces)
+            let displayString = displayPadded.join('').trimStart()
+            
+            console.log('Display update:', displayString)
+            setDisplayValue(displayString)
+            currentCycle++
+            
+            if (currentCycle >= cyclesPerChar) {
+              const nextIndex = positionsToChange.findLast(idx => idx < currentCharIndex)
+              currentCharIndex = nextIndex !== undefined ? nextIndex : -1
+              currentCycle = 0
+            }
+          } else {
+            setDisplayValue(value)
+            clearInterval(interval)
+          }
+        }, cycleTime)
+
+        return () => clearInterval(interval)
+      }
+    }, delay * 1000)
+
+    return () => clearTimeout(startDelay)
+  }, [value, previousValue, delay])
+
+  return (
+    <span className={className}>
+      {displayValue}
+    </span>
+  )
+}
 
 const MAX_WALLETS = 10 // Maximum wallets per user
 
@@ -30,6 +197,79 @@ function WalletPageContent() {
   const [lastPayout, setLastPayout] = useState(0)
   const [showIdleAnimation, setShowIdleAnimation] = useState(true)
   const idleAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [showDollarSign, setShowDollarSign] = useState(false)
+  const [dollarRotation, setDollarRotation] = useState(0)
+  const [dollarPosition, setDollarPosition] = useState({ x: 0, y: 0 })
+  const dollarTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [dollarOpacity, setDollarOpacity] = useState(0)
+  
+  // Track previous balance values for smooth transitions
+  const [previousBalances, setPreviousBalances] = useState({
+    cc: "0",
+    cusd: "0",
+    usd: "0"
+  })
+  const prevWalletIndexRef = useRef<number>(selectedWalletIndex)
+  const [animationKey, setAnimationKey] = useState(0)
+  
+  // Update previous balances when wallet changes
+  useEffect(() => {
+    if (currentWallet && prevWalletIndexRef.current !== selectedWalletIndex) {
+      // Store the current display values as previous before switching
+      const prevWallet = wallets[prevWalletIndexRef.current]
+      if (prevWallet) {
+        setPreviousBalances({
+          cc: prevWallet.balance.cc.toFixed(4),
+          cusd: prevWallet.balance.cusd.toFixed(4),
+          usd: prevWallet.balance.usd.toFixed(2)
+        })
+      }
+      prevWalletIndexRef.current = selectedWalletIndex
+      setAnimationKey(prev => prev + 1) // Force re-animation
+    }
+  }, [selectedWalletIndex, currentWallet, wallets])
+
+  // Random dollar sign appearance
+  useEffect(() => {
+    // Don't schedule if spin panel is active
+    if (activePanel === 'spin') {
+      setShowDollarSign(false)
+      return
+    }
+
+    const scheduleNextDollar = () => {
+      // Testing: appear every 5 seconds
+      const delay = 5000
+      
+      dollarTimeoutRef.current = setTimeout(() => {
+        // Set random rotation between -20 and 20 degrees
+        setDollarRotation(Math.random() * 40 - 20)
+        
+        // Set random position (10-90% to avoid edges)
+        setDollarPosition({
+          x: Math.random() * 80 + 10, // 10% to 90%
+          y: Math.random() * 80 + 10  // 10% to 90%
+        })
+        
+        setShowDollarSign(true)
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+          setShowDollarSign(false)
+          // Schedule next appearance
+          scheduleNextDollar()
+        }, 3000)
+      }, delay)
+    }
+    
+    scheduleNextDollar()
+    
+    return () => {
+      if (dollarTimeoutRef.current) {
+        clearTimeout(dollarTimeoutRef.current)
+      }
+    }
+  }, [activePanel])
   
   const displayAddress = `...${currentWallet.address.slice(-4)}`
   const canCreateWallet = wallets.length < MAX_WALLETS
@@ -91,6 +331,25 @@ function WalletPageContent() {
     const x = e.clientX / window.innerWidth
     const y = e.clientY / window.innerHeight
     setCursorPosition({ x, y })
+    
+    // Calculate distance from cursor to $ position (bottom-8 left-8 = ~32px from edges)
+    // $ is at approximately (32 + padding, window.innerHeight - 32 - padding)
+    const dollarX = 32 + 48 // left-8 + padding from outer container + some extra
+    const dollarY = window.innerHeight - 32 - 48 // bottom-8 + padding
+    
+    const distance = Math.sqrt(
+      Math.pow(e.clientX - dollarX, 2) + 
+      Math.pow(e.clientY - dollarY, 2)
+    )
+    
+    // Make visible when cursor is within 200px, fade from 0 to 1
+    const maxDistance = 200
+    if (distance < maxDistance) {
+      const opacity = (1 - distance / maxDistance)
+      setDollarOpacity(opacity)
+    } else {
+      setDollarOpacity(0)
+    }
   }
 
   // Calculate colors from three gradient planes based on cursor position (same as TradeModal)
@@ -302,18 +561,85 @@ function WalletPageContent() {
 
   return (
     <main 
-      className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden ${
-        theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-200'
+      className={`relative min-h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden p-12 ${
+        theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-100'
       }`}
       onMouseMove={handleMouseMove}
     >
+      {/* Main Floating Card Container with Glow */}
+      <div className="relative flex-1 flex flex-col">
+        {/* Dynamic Gradient Glow - Behind the card */}
+        <div 
+          className="absolute -inset-8 rounded-3xl pointer-events-none"
+          style={{
+            background: `radial-gradient(circle 1000px at ${cursorPosition.x * 100}% ${cursorPosition.y * 100}%, ${getGradientColors().layer1.replace('rgb(', 'rgba(').replace(')', ', 0.5)')}, ${getGradientColors().layer2.replace('rgb(', 'rgba(').replace(')', ', 0.3)')}, ${getGradientColors().layer3.replace('rgb(', 'rgba(').replace(')', ', 0.15)')}, transparent 75%)`,
+            zIndex: 0
+          }}
+        />
+        <div 
+          className="absolute -inset-4 rounded-3xl pointer-events-none"
+          style={{
+            background: `radial-gradient(circle 600px at ${cursorPosition.x * 100}% ${cursorPosition.y * 100}%, ${getGradientColors().layer1.replace('rgb(', 'rgba(').replace(')', ', 0.8)')}, ${getGradientColors().layer2.replace('rgb(', 'rgba(').replace(')', ', 0.6)')}, ${getGradientColors().layer3.replace('rgb(', 'rgba(').replace(')', ', 0.3)')}, transparent 65%)`,
+            filter: 'blur(20px)',
+            zIndex: 0
+          }}
+        />
+        
+        {/* Main Card */}
+        <div 
+          className={`relative flex-1 flex flex-col rounded-3xl border-2 shadow-2xl backdrop-blur-sm transition-colors duration-300 overflow-hidden z-10 ${
+            theme === 'dark' 
+              ? 'bg-[#1a1a1a] border-[#3a3a3a]' 
+              : 'bg-white border-gray-300'
+          }`}
+          style={{
+            boxShadow: theme === 'dark'
+              ? '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+              : '0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+      {/* Secret Dollar Sign - Inside card, visible only when cursor is near */}
+      {theme === 'dark' && activePanel !== 'spin' && (
+        <button
+          onClick={() => {
+            setShowDollarSign(false)
+            togglePanel('spin')
+          }}
+          className="absolute bottom-0 left-0 z-40 cursor-pointer pt-4 pb-12 pl-8 pr-8"
+          style={{ opacity: dollarOpacity * 0.6 }}
+        >
+          <svg width="72" height="72" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="dollarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: getGradientColors().layer1, stopOpacity: 1 }} />
+                <stop offset="50%" style={{ stopColor: getGradientColors().layer2, stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: getGradientColors().layer3, stopOpacity: 1 }} />
+              </linearGradient>
+            </defs>
+            <text 
+              x="50" 
+              y="75" 
+              fontSize="80" 
+              fontWeight="700" 
+              fontFamily="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif" 
+              textAnchor="middle"
+              fill="url(#dollarGradient)"
+              className="transition-all duration-500 ease-out"
+              style={{ pointerEvents: 'none' }}
+            >
+              $
+            </text>
+          </svg>
+        </button>
+      )}
       {/* Theme Toggle Button - Bottom Right */}
+      {activePanel !== 'spin' && (
       <button
         onClick={toggleTheme}
-        className={`fixed bottom-8 right-8 z-50 p-4 rounded-full transition-all duration-300 shadow-lg ${
+        className={`absolute bottom-8 right-8 z-50 p-4 rounded-full transition-all duration-300 shadow-lg ${
           theme === 'dark' 
             ? 'bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300' 
-            : 'bg-white hover:bg-gray-100 text-gray-700'
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
         }`}
         title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
       >
@@ -337,20 +663,23 @@ function WalletPageContent() {
           </svg>
         )}
       </button>
+      )}
       
-      {/* Header - Triangle on left, Txn history on right */}
+      {/* Header - Trngl on left, Txn history on right */}
       <div className="absolute top-8 left-8 right-8 flex justify-between items-start z-40">
         <div className="flex flex-col">
           <h1 className={`text-7xl font-bold transition-colors ${
             theme === 'dark' ? 'text-white' : 'text-black'
-          }`}>Triangle</h1>
+          }`}>TRNG.le</h1>
           <div className="flex items-center gap-3 mt-2">
             {/* Wallet Dropdown */}
             <div className="relative flex items-center">
               <button
                 onClick={() => setShowWalletDropdown(!showWalletDropdown)}
                 className={`transition-colors flex items-center ${
-                  theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'
+                  activePanel === 'spin'
+                    ? 'text-[#666] hover:text-[#888]'
+                    : theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'
                 }`}
               >
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -381,7 +710,7 @@ function WalletPageContent() {
                           }`}
                         >
                           <p className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{wallet.label}</p>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-[#999]' : 'text-gray-500'}`}>...{wallet.address.slice(-8)}</p>
+                          <p className={`text-sm font-mono ${theme === 'dark' ? 'text-[#999]' : 'text-gray-500'}`}>...{wallet.address.slice(-8)}</p>
                         </button>
                       ))}
                     </div>
@@ -425,7 +754,9 @@ function WalletPageContent() {
               target="_blank"
               rel="noopener noreferrer"
               className={`text-4xl transition-colors ${
-                theme === 'dark' ? 'text-[#999] hover:text-[#ccc]' : 'text-gray-500 hover:text-gray-700'
+                activePanel === 'spin'
+                  ? 'text-[#666] hover:text-[#888]'
+                  : theme === 'dark' ? 'text-[#999] hover:text-[#ccc]' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {displayAddress}
@@ -433,7 +764,9 @@ function WalletPageContent() {
             <button 
               onClick={handleCopyAddress}
               className={`transition-colors relative ${
-                theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'
+                activePanel === 'spin'
+                  ? 'text-[#666] hover:text-[#888]'
+                  : theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'
               }`}
             >
               <div className="relative w-7 h-7">
@@ -480,8 +813,10 @@ function WalletPageContent() {
       </div>
 
       {/* Main Content Container - Animates vertically only for XFER */}
+      <div className="absolute inset-0 flex items-center justify-center">
       <motion.div 
-        className="flex-1 flex flex-col items-center justify-center relative"
+        className="w-full flex flex-col items-center justify-center relative"
+        initial={{ y: 0 }}
         animate={{
           y: activePanel === 'xfer' ? 20  : 0
         }}
@@ -493,6 +828,7 @@ function WalletPageContent() {
         {/* Wallet Balance Section */}
         <motion.div 
           className="text-center"
+          initial={{ x: 0, scale: 1, opacity: 1 }}
           animate={{
             x: activePanel === 'trade' ? '-100%' : 0,
             scale: activePanel === 'trade' ? 0.5 : activePanel === 'spin' ? 0 : 1,
@@ -509,28 +845,21 @@ function WalletPageContent() {
           
           <div className="mb-12">
             <div className="flex justify-center">
-              <motion.p 
-                className={`text-7xl transition-colors ${
+              <p 
+                className={`text-7xl font-mono transition-colors ${
                   theme === 'dark' ? 'text-[#ccc]' : 'text-gray-600'
                 }`}
-                animate={{
-                  x: 0
-                }}
-                transition={{
-                  duration: 0.4,
-                  ease: "easeInOut"
-                }}
               >
-                {currentWallet.balance.cc.toFixed(4)} CC
-              </motion.p>
+                <AnimatedNumber value={currentWallet.balance.cc.toFixed(4)} previousValue={previousBalances.cc} delay={0} className="" key={animationKey} /> CC
+              </p>
             </div>
             <div className="flex justify-center mt-4">
               <motion.p 
-                className={`text-6xl transition-colors ${
+                className={`text-6xl font-mono transition-colors ${
                   theme === 'dark' ? 'text-[#aaa]' : 'text-gray-500'
                 }`}
+                initial={{ opacity: 1 }}
                 animate={{
-                  x: 0,
                   opacity: activePanel === 'trade' ? 0.7 : 1
                 }}
                 transition={{
@@ -538,13 +867,14 @@ function WalletPageContent() {
                   ease: "easeInOut"
                 }}
               >
-                {currentWallet.balance.cusd.toFixed(4)} CUSD
+                <AnimatedNumber value={currentWallet.balance.cusd.toFixed(4)} previousValue={previousBalances.cusd} delay={0} className="" key={animationKey} /> CUSD
               </motion.p>
             </div>
             <motion.p 
-              className={`text-5xl mt-2 transition-colors text-center ${
+              className={`text-5xl font-mono mt-2 transition-colors text-center ${
                 theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
               }`}
+              initial={{ opacity: 1, height: 'auto', marginTop: '0.5rem' }}
               animate={{
                 opacity: activePanel ? 0 : 1,
                 height: activePanel === 'xfer' ? 0 : 'auto',
@@ -555,13 +885,14 @@ function WalletPageContent() {
                 ease: "easeInOut"
               }}
             >
-              ${currentWallet.balance.usd.toFixed(2)}
+              $<AnimatedNumber value={currentWallet.balance.usd.toFixed(2)} previousValue={previousBalances.usd} delay={0} className="" key={animationKey} />
             </motion.p>
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-8 items-center justify-center">
             <motion.button
+              initial={{ x: 0, opacity: 1 }}
               animate={{ 
                 x: activePanel === 'xfer' ? 110 : 0,
                 opacity: activePanel === 'trade' ? 0 : 1
@@ -586,6 +917,7 @@ function WalletPageContent() {
             </motion.button>
             
             <motion.button
+              initial={{ x: 0, opacity: 1 }}
               animate={{ 
                 x: activePanel === 'xfer' ? 110 : 0,
                 opacity: activePanel === 'xfer' || activePanel === 'trade' ? 0 : 1
@@ -629,6 +961,7 @@ function WalletPageContent() {
         </AnimatePresence>
 
       </motion.div>
+      </div>
 
       {/* TRADE Panel - Slides in from right to center */}
       <AnimatePresence>
@@ -664,89 +997,6 @@ function WalletPageContent() {
         )}
       </AnimatePresence>
 
-      {/* Slot Machine SPIN Button - Bottom Left */}
-      <motion.div 
-        className="fixed bottom-8 left-8 z-40"
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: activePanel === 'spin' ? 0 : 1,
-          scale: activePanel === 'spin' ? 0.8 : 1
-        }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        style={{ pointerEvents: activePanel === 'spin' ? 'none' : 'auto' }}
-      >
-        <button
-          onClick={() => togglePanel('spin')}
-          className="relative group"
-        >
-          {/* Slot Machine Container */}
-          <div className={`relative transition-all duration-300 ${
-            theme === 'dark' 
-              ? 'bg-[#2a2a2a] border-2 border-[#4a4a4a]' 
-              : 'bg-white border-2 border-gray-400'
-          } rounded-lg p-2 pb-3 group-hover:scale-105`}>
-            
-            {/* Slot Machine Display */}
-            <div className={`flex gap-1 p-1.5 rounded mb-2 ${
-              theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-gray-100'
-            } border ${
-              theme === 'dark' ? 'border-[#3a3a3a]' : 'border-gray-300'
-            }`}>
-              {/* Slot Reels */}
-              {[0, 1, 2].map((index) => (
-                <div 
-                  key={index}
-                  className={`w-10 h-12 rounded flex items-center justify-center font-bold text-lg ${
-                    theme === 'dark' 
-                      ? 'bg-[#f5f5f5] text-[#1a1a1a] border border-[#999]' 
-                      : 'bg-white text-black border border-gray-400'
-                  }`}
-                >
-                  <motion.div
-                    animate={{ 
-                      y: [0, -15, 0],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      repeatDelay: 3,
-                      delay: index * 0.15,
-                      ease: "easeInOut"
-                    }}
-                    className="font-mono"
-                  >
-                    $
-                  </motion.div>
-                </div>
-              ))}
-            </div>
-            
-            {/* SPIN Text */}
-            <div className={`text-center font-bold text-xs tracking-wider ${
-              theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
-            }`}>
-              SPIN
-            </div>
-            
-            {/* Side handle */}
-            <div className={`absolute -right-1.5 top-[40%] -translate-y-1/2 w-0.5 h-6 rounded-full ${
-              theme === 'dark' ? 'bg-[#4a4a4a]' : 'bg-gray-400'
-            }`}>
-              <div className={`absolute -top-1 -right-0.5 w-2 h-2 rounded-full ${
-                theme === 'dark' ? 'bg-[#5a5a5a]' : 'bg-gray-500'
-              }`}></div>
-            </div>
-            
-            {/* Subtle glow on hover */}
-            <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ${
-              theme === 'dark' 
-                ? 'shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
-                : 'shadow-[0_0_15px_rgba(0,0,0,0.1)]'
-            }`}/>
-          </div>
-        </button>
-      </motion.div>
-
       {/* Animated Gradient Background - Shows when spin panel is active */}
       <AnimatePresence>
         {activePanel === 'spin' && (
@@ -770,11 +1020,11 @@ function WalletPageContent() {
         {activePanel === 'spin' && (
           <motion.div
             key="spin"
-            initial={{ scale: 0, opacity: 0, rotateY: -90 }}
-            animate={{ scale: 1, opacity: 1, rotateY: 0 }}
-            exit={{ scale: 0, opacity: 0, rotateY: 90 }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
             transition={{
-              duration: 0.8,
+              duration: 0.5,
               ease: [0.43, 0.13, 0.23, 0.96]
             }}
             className="fixed inset-0 z-30 pointer-events-none flex items-center justify-center"
@@ -783,13 +1033,13 @@ function WalletPageContent() {
               {/* Close Button */}
               <button
                 onClick={() => setActivePanel(null)}
-                className={`absolute -top-14 right-0 p-3 transition-all z-40 hover:scale-110 ${
+                className={`absolute -top-16 right-0 p-6 transition-all z-40 hover:scale-110 ${
                   theme === 'dark' 
                     ? 'text-white hover:text-gray-300' 
                     : 'text-black hover:text-gray-600'
                 }`}
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -842,7 +1092,7 @@ function WalletPageContent() {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
                   >
-                    TRIANGLE SLOTS
+                    SLOTS
                   </motion.h1>
                 </div>
 
@@ -1188,25 +1438,39 @@ function WalletPageContent() {
       </AnimatePresence>
 
       {/* Bottom - FDV */}
+      {activePanel !== 'spin' && (
       <div className="absolute bottom-8 left-0 right-0 flex justify-center z-40">
-        <p className={`text-2xl transition-colors ${
+        <p className={`text-2xl font-mono transition-colors ${
           theme === 'dark' ? 'text-[#999]' : 'text-gray-500'
         }`}>
           CC = {fdv} FDV
         </p>
       </div>
+      )}
 
-      {/* Transaction History Sidebar */}
-      <TransactionHistory isOpen={showTransactions} onClose={() => setShowTransactions(false)} />
+      {/* Transaction History - Inside Card */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: showTransactions ? '0%' : '100%' }}
+        transition={{ duration: 0.5, ease: 'easeInOut' }}
+        className={`absolute top-0 right-0 h-full w-1/3 shadow-2xl z-50 rounded-r-3xl overflow-hidden ${
+          theme === 'dark' ? 'bg-[#1a1a1a] border-l-2 border-[#3a3a3a]' : 'bg-white border-l-2 border-gray-300'
+        }`}
+      >
+        <TransactionHistory isOpen={showTransactions} onClose={() => setShowTransactions(false)} />
+      </motion.div>
+        </div>
+        {/* End of Main Card */}
+      </div>
+      {/* End of Main Floating Card Container with Glow */}
       
       {/* Create Wallet Modal */}
       <CreateWalletModal isOpen={showCreateWallet} onClose={() => setShowCreateWallet(false)} onCreate={handleCreateWallet} />
       
-      {/* Backdrop for Transaction History and Create Wallet */}
+      {/* Backdrop for Create Wallet */}
       <div 
-        className={`fixed inset-0 bg-black z-40 transition-opacity duration-500 ${showTransactions || showCreateWallet ? 'opacity-30' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-black z-40 transition-opacity duration-500 ${showCreateWallet ? 'opacity-30' : 'opacity-0 pointer-events-none'}`}
         onClick={() => {
-          setShowTransactions(false)
           setShowCreateWallet(false)
         }}
       />

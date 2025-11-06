@@ -288,7 +288,7 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
             <div className="flex justify-between items-center mb-3">
               <span className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-600'}`}>Sell</span>
               <span className={`text-xs ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Balance: {getTokenBalance(sellToken)}
+                Balance: <span className="font-mono">{getTokenBalance(sellToken)}</span>
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -300,13 +300,13 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                   setSellAmount(rawValue);
                 }}
                 placeholder="0"
-                className={`flex-1 bg-transparent text-3xl font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                className={`flex-1 bg-transparent text-3xl font-bold font-mono focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                   theme === 'dark' ? 'text-white placeholder-[#666]' : 'text-gray-900 placeholder-gray-400'
                 }`}
               />
               <button
                 onClick={() => setShowSellTokenModal(true)}
-                className={`px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2 border-2 ${
+                className={`px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2 border-2 whitespace-nowrap flex-shrink-0 ${
                   theme === 'dark'
                     ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a] border-[#3a3a3a]'
                     : 'bg-white text-gray-900 hover:bg-gray-100 border-gray-300'
@@ -319,7 +319,7 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                 </svg>
               </button>
             </div>
-            <div className={`text-sm mt-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+            <div className={`text-sm mt-3 font-mono ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               ${sellToken === 'CC' ? (parseFloat(sellAmount || '0') * ccPrice).toFixed(2) : sellAmount || '0.00'}
             </div>
           </div>
@@ -354,13 +354,13 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                 value={buyAmount}
                 readOnly
                 placeholder="0"
-                className={`flex-1 bg-transparent text-3xl font-bold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                className={`flex-1 bg-transparent text-3xl font-bold font-mono focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                   theme === 'dark' ? 'text-white placeholder-[#666]' : 'text-gray-900 placeholder-gray-400'
                 }`}
               />
               <button
                 onClick={() => setShowBuyTokenModal(true)}
-                className={`px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2 border-2 ${
+                className={`px-4 py-2 rounded-xl font-bold text-lg flex items-center gap-2 border-2 whitespace-nowrap flex-shrink-0 ${
                   theme === 'dark'
                     ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a] border-[#3a3a3a]'
                     : 'bg-white text-gray-900 hover:bg-gray-100 border-gray-300'
@@ -373,7 +373,7 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                 </svg>
               </button>
             </div>
-            <div className={`text-sm mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`text-sm mt-3 font-mono ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
               ${buyToken === 'CC' ? (parseFloat(buyAmount || '0') * ccPrice).toFixed(2) : buyAmount || '0.00'}
             </div>
           </div>
@@ -545,7 +545,7 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                   >
                     <div className="flex flex-col items-start">
                       <span>{token}</span>
-                      <span className={`text-xs font-normal ${
+                      <span className={`text-xs font-normal font-mono ${
                         sellToken === token
                           ? 'text-white opacity-80'
                           : theme === 'dark'
@@ -620,7 +620,7 @@ export default function TradeModal({ isOpen, onClose }: TradeModalProps) {
                   >
                     <div className="flex flex-col items-start">
                       <span>{token}</span>
-                      <span className={`text-xs font-normal ${
+                      <span className={`text-xs font-normal font-mono ${
                         buyToken === token
                           ? 'text-white opacity-80'
                           : theme === 'dark'

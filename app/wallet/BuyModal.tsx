@@ -117,7 +117,7 @@ export default function BuyModal({ isOpen, onClose }: BuyModalProps) {
               {exceedsLimit && ccReceived > 0 && (
                 <div className="mt-2 px-4 py-2 bg-red-100 border border-red-400 rounded">
                   <p className="text-sm text-red-700 font-medium">
-                    Purchase amount ({ccReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CC) exceeds your daily address limit
+                    Purchase amount (<span className="font-mono">{ccReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CC</span>) exceeds your daily address limit
                   </p>
                 </div>
               )}
