@@ -35,7 +35,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const animationFrameRef = useRef<number | null>(null)
   const processingOffsetRef = useRef(0)
   const glitchCompleteRef = useRef(false)
-  const fadeCompleteRef = useRef(false)
   const [isCollapsing, setIsCollapsing] = useState(false)
   const [showButtons, setShowButtons] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
@@ -62,6 +61,27 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     return () => clearTimeout(timer)
   }, [])
 
+  // Send message to Spline when title animation starts
+  useEffect(() => {
+    const iframe = document.getElementById('spline-iframe') as HTMLIFrameElement
+    if (iframe && iframe.contentWindow) {
+      if (isTitleAnimating) {
+        // Send start animation event to Spline
+        iframe.contentWindow.postMessage({
+          type: 'triggerAnimation',
+          action: 'start'
+        }, '*')
+        console.log('Sent animation start message to Spline')
+      } else {
+        // Send stop/reset animation event to Spline (optional)
+        iframe.contentWindow.postMessage({
+          type: 'triggerAnimation',
+          action: 'stop'
+        }, '*')
+      }
+    }
+  }, [isTitleAnimating])
+
   // Pre-define character arrays to avoid recreating them
   const glitchSequenceChars = ["+", "=", "-", ":", ".", " "]
   const randomGlitchChars = ["#", "$", "!", "?", "&", "%", "@", "/", "\\", "|", "<", ">"]
@@ -73,7 +93,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       frameCountRef.current = 0
       processingOffsetRef.current = 0 // Reset processing offset
       glitchCompleteRef.current = false // Reset completion tracker
-      fadeCompleteRef.current = false // Reset fade completion
 
       if (canvasRef.current) {
         // Dynamically adjust columns based on screen width for consistent performance
@@ -278,10 +297,9 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       const completionPercentage = (blackCount / infectedCount) * 100
 
       // Consider complete if we're at 99%+ completion or at frame 150+
-      // But don't call onGlitchComplete until fade is mostly done
       const isComplete = completionPercentage > 99 || frameCountRef.current > 150
 
-      if (isComplete && frameCountRef.current > 110) { // Wait until fade is mostly complete (70 + ~40 frames)
+      if (isComplete && frameCountRef.current > 70) { // Navigate immediately when glitch completes
         console.log(
           `Glitch complete at frame ${frameCountRef.current}: ${blackCount}/${infectedCount} cells (${completionPercentage.toFixed(2)}%)`,
         )
@@ -306,13 +324,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     const draw = () => {
       if (!ctx || !video || !isVideoLoaded) return
       
-      // If fade is complete, just keep showing white background
-      if (fadeCompleteRef.current) {
-        ctx.fillStyle = "rgba(255, 255, 255, 1)"
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        animationFrameRef.current = requestAnimationFrame(draw)
-        return
-      }
+      // Fade removed - no need to check fadeCompleteRef
 
       // Skip frames to reduce CPU usage
       frameSkipCounter++
@@ -544,59 +556,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         if (isGlitching) {
           frameCountRef.current++
 
-          // Start fading much earlier - right after glitch mostly completes
-          if (frameCountRef.current > 70) {
-            // Calculate fade progress (0 to 1) over 70 frames (1.17 second fade)
-            const fadeStartFrame = 70
-            const fadeDuration = 70
-            const fadeProgress = Math.min((frameCountRef.current - fadeStartFrame) / fadeDuration, 1)
-            
-            // Fade background from black (0) to white (255)
-            const colorValue = Math.floor(255 * fadeProgress)
-            ctx.fillStyle = `rgba(${colorValue}, ${colorValue}, ${colorValue}, 1)`
-            ctx.fillRect(0, 0, canvas.width, canvas.height)
-            
-            // Synchronize title fade from white to black with background fade (ahead to stay in sync)
-            if (titleRef.current) {
-              const adjustedProgress = Math.min(fadeProgress + 0.08, 1) // More ahead to compensate for lag
-              const titleColorValue = Math.floor(255 * (1 - adjustedProgress)) // Inverted progress for title
-              const hex = titleColorValue.toString(16).padStart(2, '0')
-              const newColor = `#${hex}${hex}${hex}`
-              titleRef.current.style.setProperty('color', newColor, 'important')
-              
-              // Apply the same color fade to the logo image
-              const logoImg = titleRef.current.querySelector('img')
-              if (logoImg) {
-                const brightness = (1 - adjustedProgress) * 0.98 + 0.02 // From 1 to 0.02
-                const invert = adjustedProgress * 100 // From 0% to 100%
-                logoImg.style.filter = `invert(${invert}%) brightness(${brightness}) drop-shadow(0 0 8px rgba(${titleColorValue}, ${titleColorValue}, ${titleColorValue}, 0.3)) contrast(1.05)`
-              }
-            }
-            
-            // Log the fade progress for both
-            if (frameCountRef.current === fadeStartFrame + 1) {
-              console.log('Starting synchronized fade: background to white, title to black')
-            }
-            if (frameCountRef.current === fadeStartFrame + fadeDuration) {
-              console.log('Synchronized fade complete - background white, title black')
-            }
-            
-            // Stop after fade is complete
-            if (frameCountRef.current > fadeStartFrame + fadeDuration + 10) {
-              // Keep the white background indefinitely - don't reset
-              ctx.fillStyle = "rgba(255, 255, 255, 1)"
-              ctx.fillRect(0, 0, canvas.width, canvas.height)
-              
-              // Title is already set to black
-              console.log('Background set to final white, title remains black')
-              
-              // Mark fade as complete to prevent further drawing
-              fadeCompleteRef.current = true
-              
-              // Don't reset the animation - keep the white screen until navigation
-              // This prevents the flash of ASCII background
-            }
-          }
+          // Fade removed - navigate directly when glitch completes
         }
       } catch (error) {
         console.error("Error in draw function:", error)
@@ -682,106 +642,90 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           display: windowWidth < mobileBreakpoint && (showLoginModal || showRegisterModal) ? 'none' : 'flex'
         }}
       >
-        {/* Title and Buttons Container */}
+        {/* Top Left - TRNG.le Title */}
+        {!showLoginModal && !showRegisterModal && showButtons && (
+          <div className="fixed top-8 left-8 z-[10002]" style={{ pointerEvents: 'auto' }}>
+            <h1 className="text-8xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
+              TRNG.le
+            </h1>
+          </div>
+        )}
+
+        {/* Top Right - Buttons */}
+        <AnimatePresence mode="wait">
+          {!showLoginModal && !showRegisterModal && showButtons && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed top-8 right-8 z-[10002] flex gap-3"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <button
+                onClick={handleLoginClick}
+                className="px-6 py-2 bg-transparent border-2 border-white text-white text-base hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
+              >
+                Login
+              </button>
+              <button
+                onClick={handleCreateWalletClick}
+                className="px-6 py-2 bg-white text-black text-base hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
+                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
+              >
+                Create Wallet
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Spline Background - Animates when modal opens and during glitch */}
         <motion.div 
-          className={`button-container ${isCollapsing ? "collapsing" : ""} text-center`}
+          ref={titleRef}
+          className="fixed inset-0 flex items-center justify-center"
           animate={{
-            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0
+            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0,
+            scale: isTitleAnimating ? 1.3 : 1
           }}
           transition={{
-            duration: 0.5,
-            ease: [0.4, 0, 0.2, 1]
+            x: {
+              duration: 0.5,
+              ease: [0.4, 0, 0.2, 1]
+            },
+            scale: {
+              duration: isTitleAnimating ? 6.0 : 0.5,
+              ease: isTitleAnimating ? "linear" : [0.4, 0, 0.2, 1]
+            }
           }}
-          style={{ pointerEvents: 'auto' }}
+          style={{
+            width: '100vw',
+            height: '100vh',
+            zIndex: 1,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            opacity: 1
+          }}
         >
-          {/* Ascii Title */}
-          <motion.div
-            initial={{
-              scale: 1,
-              opacity: 1
-            }}
-            animate={{
-              scale: isTitleAnimating ? 1.3 : 1,
-              opacity: 1 // Force opacity to stay at 1
-            }}
-            transition={{
-              duration: 6.0,
-              ease: "linear"
-            }}
+          <iframe 
+            id="spline-iframe"
+            src='https://my.spline.design/weirdbubblecopy-4Gvk9sRNR2GYKCwZtbv4jlf2/?controls=false&orbit=false' 
+            frameBorder='0' 
+            width='100%' 
+            height='100%'
             style={{
-              zIndex: 200,
-              position: 'relative',
-              opacity: 1, // Ensure full opacity
-              marginTop: '-16rem'
+              border: 'none',
+              borderRadius: '0',
+              background: 'transparent',
+              display: 'block',
+              pointerEvents: 'auto'
             }}
-          >
-            <div 
-              ref={titleRef}
-              className="mx-auto block flex items-center justify-center"
-              style={{
-                width: 'clamp(28rem, 70vw, 56rem)',
-                height: 'clamp(28rem, 70vw, 56rem)',
-                zIndex: 9999,
-                position: 'relative',
-                opacity: 1, // Explicit full opacity
-                marginBottom: '-12rem',
-                pointerEvents: 'none'
-              }}
-            >
-              <img 
-                src="/triangle-logo-clean.png" 
-                alt="Triangle Logo" 
-                className="w-full h-full object-contain"
-                style={{
-                  filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
-                  imageRendering: 'crisp-edges'
-                }}
-              />
-              <div 
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
-                  mixBlendMode: 'multiply',
-                  opacity: 0.4
-                }}
-              />
-            </div>
-          </motion.div>
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          />
           
-          
-          {/* Buttons - animated */}
-          <AnimatePresence mode="wait">
-            {!showLoginModal && !showRegisterModal && showButtons ? (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ 
-                    duration: 0.3,
-                    ease: [0.4, 0, 0.2, 1] 
-                  }}
-                  className="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center overflow-hidden px-4"
-                  style={{ position: 'relative', zIndex: 10000, pointerEvents: 'auto' }}
-                >
-                  <button
-                    onClick={handleLoginClick}
-                    className="px-6 sm:px-8 py-2 sm:py-3 bg-transparent border-2 border-white text-white text-base sm:text-lg hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
-                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={handleCreateWalletClick}
-                    className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-black text-base sm:text-lg hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
-                    style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
-                  >
-                    Create Wallet
-                  </button>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </motion.div>
-        </div>
+        </motion.div>
+      </div>
 
       {/* Login Modal - positioned outside main container */}
       {showLoginModal && (
@@ -794,10 +738,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             duration: 0.3,
             ease: [0.4, 0, 0.2, 1]
           }}
+          style={{ pointerEvents: 'none' }}
         >
           <motion.div
             className="relative flex flex-col items-center"
               style={{ 
+                pointerEvents: 'auto',
                 ...(windowWidth >= mobileBreakpoint ? { 
                   marginLeft: '700px'
                 } : {})
@@ -919,10 +865,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             duration: 0.3,
             ease: [0.4, 0, 0.2, 1]
           }}
+          style={{ pointerEvents: 'none' }}
         >
           <motion.div
             className="relative flex flex-col items-center"
               style={{ 
+                pointerEvents: 'auto',
                 ...(windowWidth >= mobileBreakpoint ? { 
                   marginLeft: '700px'
                 } : {})

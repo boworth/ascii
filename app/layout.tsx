@@ -18,9 +18,9 @@ export const metadata = {
   generator: 'v0.app',
   title: 'TRNG.le',
   icons: {
-    icon: '/triangle-logo.png',
-    shortcut: '/triangle-logo.png',
-    apple: '/triangle-logo.png',
+    icon: '/triangle-logo-penrose.png',
+    shortcut: '/triangle-logo-penrose.png',
+    apple: '/triangle-logo-penrose.png',
   },
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/triangle-logo.png" />
+        <link rel="icon" href="/triangle-logo-penrose.png" />
       </head>
       <body className={`${inter.variable} ${robotoMono.variable} font-sans overflow-hidden`}>{children}</body>
     </html>

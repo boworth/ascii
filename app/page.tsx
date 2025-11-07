@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import NeonIsometricMaze from "./neon-isometric-maze"
 import { motion } from "framer-motion"
@@ -10,10 +10,29 @@ export default function Home() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [isGlitchComplete, setIsGlitchComplete] = useState(false)
+  const [contentLoaded, setContentLoaded] = useState(false)
+  const [minimumTimeElapsed, setMinimumTimeElapsed] = useState(false)
+
+  // Set minimum loading time of 1 second
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinimumTimeElapsed(true)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Hide loading screen only when both content is loaded AND minimum time has elapsed
+  useEffect(() => {
+    if (contentLoaded && minimumTimeElapsed) {
+      console.log("Minimum time elapsed and content loaded, hiding loading screen")
+      setIsLoading(false)
+    }
+  }, [contentLoaded, minimumTimeElapsed])
 
   const handleLoadComplete = useCallback(() => {
-    console.log("Maze loaded, showing content")
-    setIsLoading(false)
+    console.log("Maze loaded")
+    setContentLoaded(true)
   }, [])
 
   const handleButtonClick = useCallback(() => {
@@ -23,10 +42,8 @@ export default function Home() {
   const handleGlitchComplete = useCallback(() => {
     console.log("Glitch effect completed, navigating to wallet")
     setIsGlitchComplete(true)
-    // Navigate directly to wallet after a brief pause
-    setTimeout(() => {
-      router.push("/wallet")
-    }, 1500)
+    // Navigate directly to wallet immediately
+    router.push("/wallet")
   }, [router])
 
 
