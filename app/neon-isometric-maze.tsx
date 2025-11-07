@@ -62,13 +62,38 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     return () => clearTimeout(timer)
   }, [])
 
-  // Listen for Spline iframe load
+  // Listen for Spline iframe load with improved detection
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    let splineReady = false
+    
+    // Listen for messages from Spline iframe
+    const handleMessage = (event: MessageEvent) => {
+      // Spline sends various messages, we'll consider it loaded after any message
+      if (event.origin === 'https://my.spline.design' || event.data?.type === 'spline') {
+        if (!splineReady) {
+          console.log('Spline message received, marking as ready')
+          splineReady = true
+          setIsSplineLoaded(true)
+        }
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    // Fallback: If no message received, wait for iframe load + extra time for 3D rendering
     const iframe = document.getElementById('spline-iframe') as HTMLIFrameElement
     if (iframe) {
       const handleIframeLoad = () => {
-        console.log('Spline iframe loaded')
-        setIsSplineLoaded(true)
+        console.log('Spline iframe HTML loaded, waiting for 3D content...')
+        // Wait an additional 2 seconds after iframe loads for Spline content to render
+        timeoutId = setTimeout(() => {
+          if (!splineReady) {
+            console.log('Spline timeout fallback - marking as loaded')
+            splineReady = true
+            setIsSplineLoaded(true)
+          }
+        }, 2000)
       }
       
       iframe.addEventListener('load', handleIframeLoad)
@@ -80,7 +105,14 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       
       return () => {
         iframe.removeEventListener('load', handleIframeLoad)
+        window.removeEventListener('message', handleMessage)
+        if (timeoutId) clearTimeout(timeoutId)
       }
+    }
+    
+    return () => {
+      window.removeEventListener('message', handleMessage)
+      if (timeoutId) clearTimeout(timeoutId)
     }
   }, [])
 
