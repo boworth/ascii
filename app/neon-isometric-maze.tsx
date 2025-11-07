@@ -26,6 +26,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
+  const [isSplineLoaded, setIsSplineLoaded] = useState(false)
   const [isGlitching, setIsGlitching] = useState(false)
   const [titleColor, setTitleColor] = useState('#ffffff')
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -60,6 +61,36 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     
     return () => clearTimeout(timer)
   }, [])
+
+  // Listen for Spline iframe load
+  useEffect(() => {
+    const iframe = document.getElementById('spline-iframe') as HTMLIFrameElement
+    if (iframe) {
+      const handleIframeLoad = () => {
+        console.log('Spline iframe loaded')
+        setIsSplineLoaded(true)
+      }
+      
+      iframe.addEventListener('load', handleIframeLoad)
+      
+      // Check if already loaded
+      if (iframe.contentDocument?.readyState === 'complete') {
+        handleIframeLoad()
+      }
+      
+      return () => {
+        iframe.removeEventListener('load', handleIframeLoad)
+      }
+    }
+  }, [])
+
+  // Call onLoadComplete only when both video and Spline are loaded
+  useEffect(() => {
+    if (isVideoLoaded && isSplineLoaded) {
+      console.log('Both video and Spline loaded, calling onLoadComplete')
+      onLoadComplete?.()
+    }
+  }, [isVideoLoaded, isSplineLoaded, onLoadComplete])
 
   // Send message to Spline when title animation starts
   useEffect(() => {
@@ -568,7 +599,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
 
     const handleVideoLoad = () => {
       setIsVideoLoaded(true)
-      onLoadComplete?.()
       // Slow down video to reduce resource usage
       video.playbackRate = 0.5
       video.play().catch((err) => console.error("Error playing video:", err))
