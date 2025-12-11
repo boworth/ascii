@@ -306,15 +306,17 @@ const navItems = [
   {
     category: "Swap",
     items: [
-      { id: "post-swap", method: "POST", path: "/swap", label: "Execute a quoted order" },
-      { id: "post-multi-swap", method: "POST", path: "/multi-swap", label: "Execute multi-order batch" },
+      { id: "post-swap", method: "POST", path: "/swap", label: "Execute quote" },
+      { id: "post-multi-swap", method: "POST", path: "/multi-swap", label: "Execute multi-quote" },
     ]
   },
   {
-    category: "Orders",
+    category: "Info",
     items: [
-      { id: "get-orders", method: "GET", path: "/orders", label: "List orders for wallet" },
-      { id: "get-order-details", method: "GET", path: "/orders/{order_id}", label: "Get order details" },
+      { id: "get-quotes", method: "GET", path: "/quotes", label: "List quotes" },
+      { id: "get-quote-details", method: "GET", path: "/quotes/{quote_id}", label: "Get quote details" },
+      { id: "get-swaps", method: "GET", path: "/swaps", label: "List swaps" },
+      { id: "get-swap-details", method: "GET", path: "/swaps/{order_id}", label: "Get swap details" },
     ]
   },
   {
@@ -342,9 +344,8 @@ const endpointData: Record<string, {
   pythonExample?: string;
 }> = {
   "get-prices": {
-    description: "Returns current prices for all supported assets.",
+    description: "Returns current mid prices for all supported assets.",
     response: `{
-  "USDxlr": "1.00",
   "CBTC": "97250.00",
   "CC": "0.07353",
   "timestamp": 1702312345.123
@@ -363,9 +364,9 @@ print(f"CBTC: \${prices['CBTC']}")
 print(f"CC: \${prices['CC']}")`
   },
   "get-prices-symbol": {
-    description: "Returns the current price for a specific asset.",
+    description: "Returns the current mid price for a specific asset.",
     parameters: [
-      { name: "symbol", type: "string", required: true, description: "USDxlr, CBTC, or CC" }
+      { name: "symbol", type: "string", required: true, description: "CBTC or CC" }
     ],
     response: `{
   "symbol": "CBTC",
@@ -389,8 +390,8 @@ print(f"{data['symbol']}: \${data['price']}")`
   "post-quote": {
     description: "Request a quote for swapping one token for another. Quotes are valid for 60 seconds.",
     parameters: [
-      { name: "from_token", type: "string", required: true, description: "USDxlr, CBTC, or CC" },
-      { name: "to_token", type: "string", required: true, description: "USDxlr, CBTC, or CC" },
+      { name: "from_token", type: "string", required: true, description: "CBTC or CC" },
+      { name: "to_token", type: "string", required: true, description: "CBTC or CC" },
       { name: "amount", type: "string", required: true, description: "Amount to sell" },
       { name: "max_slippage_bps", type: "integer", description: "Max slippage in bps (default: 50)" }
     ],
@@ -445,7 +446,7 @@ print(f"Receive: {quote['amount_out']} CBTC")`
     requestBody: `{
   "orders": [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "USDxlr", "to_token": "CC", "amount": "5000" }
+    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
   ],
   "max_slippage_bps": 50
 }`,
@@ -466,7 +467,7 @@ print(f"Receive: {quote['amount_out']} CBTC")`
 
 orders = [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "USDxlr", "to_token": "CC", "amount": "5000" }
+    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
 ]
 
 response = requests.post(
@@ -484,15 +485,17 @@ quote = response.json()
 print(f"Total: \${quote['total_usd_value']}")`
   },
   "post-swap": {
-    description: "Execute a quoted order. Send the amount_in to the payment_address from the quote response. If funds are not received or there is a discrepancy, funds will be returned.",
+    description: "Execute a quoted order. Send the amount_in to the payment_address from the quote response. If the swap fails or there is a discrepancy, funds will be returned to the from_wallet.",
     parameters: [
       { name: "order_id", type: "string", required: true, description: "Order ID from quote" },
-      { name: "wallet", type: "string", required: true, description: "Wallet address" },
+      { name: "from_wallet", type: "string", required: true, description: "Source wallet address" },
+      { name: "to_wallet", type: "string", required: true, description: "Destination wallet address" },
       { name: "tx_hash", type: "string", required: true, description: "Deposit transaction hash" }
     ],
     requestBody: `{
   "order_id": "ord_abc123xyz",
-  "wallet": "0x1234...",
+  "from_wallet": "0x1234...",
+  "to_wallet": "0x5678...",
   "tx_hash": "0xabcdef..."
 }`,
     response: `{
@@ -515,7 +518,8 @@ response = requests.post(
     },
     json={
         "order_id": "ord_abc123xyz",
-        "wallet": "0x1234...",
+        "from_wallet": "0x1234...",
+        "to_wallet": "0x5678...",
         "tx_hash": "0xabcdef..."
     }
 )
@@ -527,18 +531,24 @@ else:
     print(f"Error: {result['error']}")`
   },
   "post-multi-swap": {
-    description: "Execute a multi-order batch. Send each amount_in to its corresponding payment_address. If any swap fails, all funds will be returned.",
+    description: "Execute a multi-order batch across multiple wallets. Send each amount_in to its corresponding payment_address. If any swap fails, funds will be returned to each respective from_wallet.",
     parameters: [
       { name: "order_id", type: "string", required: true, description: "Multi-quote order ID" },
-      { name: "wallet", type: "string", required: true, description: "Wallet address" },
-      { name: "tx_hashes", type: "array", required: true, description: "Transaction hashes in order" }
+      { name: "transactions", type: "array", required: true, description: "Array of transaction objects with tx_hash, from_wallet, and to_wallet" }
     ],
     requestBody: `{
   "order_id": "ord_multi_abc123xyz",
-  "wallet": "0x1234...",
-  "tx_hashes": [
-    "0xabcdef...",
-    "0x098765..."
+  "transactions": [
+    {
+      "tx_hash": "0xabcdef...",
+      "from_wallet": "0x1234...",
+      "to_wallet": "0x5678..."
+    },
+    {
+      "tx_hash": "0x098765...",
+      "from_wallet": "0xaaaa...",
+      "to_wallet": "0xbbbb..."
+    }
   ]
 }`,
     response: `{
@@ -553,9 +563,17 @@ else:
     ],
     pythonExample: `import requests
 
-tx_hashes = [
-    "0xabcdef...",
-    "0x098765..."
+transactions = [
+    {
+        "tx_hash": "0xabcdef...",
+        "from_wallet": "0x1234...",
+        "to_wallet": "0x5678..."
+    },
+    {
+        "tx_hash": "0x098765...",
+        "from_wallet": "0xaaaa...",
+        "to_wallet": "0xbbbb..."
+    }
 ]
 
 response = requests.post(
@@ -565,52 +583,109 @@ response = requests.post(
     },
     json={
         "order_id": "ord_multi_abc123xyz",
-        "wallet": "0x1234...",
-        "tx_hashes": tx_hashes
+        "transactions": transactions
     }
 )
 
 result = response.json()
 print(f"Status: {result['status']}")`
   },
-  "get-orders": {
-    description: "List all orders for a wallet address.",
+  "get-quotes": {
+    description: "List all quotes for your API key.",
     parameters: [
-      { name: "wallet", type: "string", required: true, description: "Wallet address" },
-      { name: "status", type: "string", description: "Filter by status" },
+      { name: "status", type: "string", description: "Filter by status (active, expired, executed)" },
       { name: "limit", type: "integer", description: "Max results (default 50)" }
     ],
     response: `{
-  "wallet": "0x1234...",
-  "total": 15,
-  "orders": [
-    { "order_id": "ord_abc123", "status": "completed" },
-    { "order_id": "ord_def456", "status": "pending" }
+  "total": 8,
+  "quotes": [
+    { "order_id": "ord_abc123", "status": "active", "expires_at": 1702312405, "created_at": 1702312345 },
+    { "order_id": "ord_def456", "status": "expired", "expires_at": 1702312000, "created_at": 1702311940 }
   ]
 }`,
     pythonExample: `import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/orders",
+    "https://trngle.xyz/v1/quotes",
     headers={
         "X-API-Key": "your_api_key"
     },
     params={
-        "wallet": "0x1234...",
+        "status": "active",
+        "limit": 10
+    }
+)
+
+data = response.json()
+for quote in data["quotes"]:
+    print(f"{quote['order_id']}: {quote['status']}")`
+  },
+  "get-quote-details": {
+    description: "Get detailed information about a specific quote.",
+    parameters: [
+      { name: "order_id", type: "string", required: true, description: "Order ID" }
+    ],
+    response: `{
+  "order_id": "ord_abc123xyz",
+  "status": "active",
+  "from_token": "CC",
+  "to_token": "CBTC",
+  "amount_in": "100000",
+  "amount_out": "0.0756",
+  "price": "1322751.32",
+  "slippage_bps": 15,
+  "payment_address": "0x7890...",
+  "expires_at": 1702312405
+}`,
+    pythonExample: `import requests
+
+order_id = "ord_abc123xyz"
+
+response = requests.get(
+    f"https://trngle.xyz/v1/quotes/{order_id}",
+    headers={
+        "X-API-Key": "your_api_key"
+    }
+)
+
+quote = response.json()
+print(f"Status: {quote['status']}")
+print(f"Amount out: {quote['amount_out']}")`
+  },
+  "get-swaps": {
+    description: "List all swaps for your API key.",
+    parameters: [
+      { name: "status", type: "string", description: "Filter by status (pending, processing, completed, failed)" },
+      { name: "limit", type: "integer", description: "Max results (default 50)" }
+    ],
+    response: `{
+  "total": 15,
+  "swaps": [
+    { "order_id": "ord_abc123", "status": "completed", "created_at": 1702312345 },
+    { "order_id": "ord_def456", "status": "pending", "created_at": 1702312400 }
+  ]
+}`,
+    pythonExample: `import requests
+
+response = requests.get(
+    "https://trngle.xyz/v1/swaps",
+    headers={
+        "X-API-Key": "your_api_key"
+    },
+    params={
         "status": "completed",
         "limit": 10
     }
 )
 
 data = response.json()
-for order in data["orders"]:
-    print(f"{order['order_id']}: {order['status']}")`
+for swap in data["swaps"]:
+    print(f"{swap['order_id']}: {swap['status']}")`
   },
-  "get-order-details": {
-    description: "Get detailed information about a specific order.",
+  "get-swap-details": {
+    description: "Get detailed information about a specific swap.",
     parameters: [
-      { name: "order_id", type: "string", required: true, description: "Order ID" },
-      { name: "wallet", type: "string", required: true, description: "Wallet address" }
+      { name: "order_id", type: "string", required: true, description: "Order ID" }
     ],
     response: `{
   "order_id": "ord_abc123xyz",
@@ -619,25 +694,24 @@ for order in data["orders"]:
   "to_token": "CBTC",
   "amount_in": "100000",
   "amount_out": "0.0756",
-  "tx_hash_out": "0xdef456..."
+  "tx_hash_out": "0xdef456...",
+  "created_at": 1702312345,
+  "completed_at": 1702312400
 }`,
     pythonExample: `import requests
 
 order_id = "ord_abc123xyz"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/orders/{order_id}",
+    f"https://trngle.xyz/v1/swaps/{order_id}",
     headers={
         "X-API-Key": "your_api_key"
-    },
-    params={
-        "wallet": "0x1234..."
     }
 )
 
-order = response.json()
-print(f"Status: {order['status']}")
-print(f"Received: {order['amount_out']}")`
+swap = response.json()
+print(f"Status: {swap['status']}")
+print(f"Received: {swap['amount_out']}")`
   },
 }
 
@@ -701,7 +775,7 @@ function DocsPageContent() {
 
   return (
     <main 
-      className={`relative h-screen flex flex-col select-none transition-colors duration-300 overflow-hidden p-12 ${
+      className={`theme-transition relative h-screen flex flex-col select-none overflow-hidden p-12 ${
         theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-100'
       }`}
       onMouseMove={handleMouseMove}
@@ -720,6 +794,7 @@ function DocsPageContent() {
         '--purple': theme === 'dark' ? '#d3869b' : '#6f42c1',
         '--aqua': theme === 'dark' ? '#8ec07c' : '#22863a',
         '--orange': theme === 'dark' ? '#fe8019' : '#e36209',
+        transition: 'background-color 0.5s ease',
       } as React.CSSProperties}
     >
       {/* Main Floating Card Container with Glow */}
@@ -743,7 +818,7 @@ function DocsPageContent() {
         
         {/* Main Card */}
         <div 
-          className={`relative flex-1 flex rounded-3xl border-2 shadow-2xl backdrop-blur-sm transition-colors duration-300 overflow-hidden z-10 min-h-0 ${
+          className={`relative flex-1 flex rounded-3xl border-2 shadow-2xl backdrop-blur-sm overflow-hidden z-10 min-h-0 ${
             theme === 'dark' 
               ? 'bg-[#1a1a1a] border-[#3a3a3a]' 
               : 'bg-white border-gray-300'
@@ -751,7 +826,8 @@ function DocsPageContent() {
           style={{
             boxShadow: theme === 'dark'
               ? '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-              : '0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05)'
+              : '0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+            transition: 'background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease',
           }}
         >
           {/* Theme Toggle Button */}
@@ -945,6 +1021,16 @@ function DocsPageContent() {
   "tx_hash_out": "0xdef456..."
 }`} language="json" />
                             </div>
+                            <div>
+                              <p className="text-sm text-[var(--fg-dim)] mb-3">Order failed</p>
+                              <CodeBlock theme={theme} code={`{
+  "type": "order_failed",
+  "order_id": "ord_abc123xyz",
+  "status": "failed",
+  "error": "QUOTE_EXPIRED",
+  "tx_hash_refund": "0x987654..."
+}`} language="json" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -964,6 +1050,9 @@ def on_message(ws, message):
     data = json.loads(message)
     if data["type"] == "order_complete":
         print(f"Order {data['order_id']} done!")
+    elif data["type"] == "order_failed":
+        print(f"Order {data['order_id']} failed: {data['error']}")
+        print(f"Refund tx: {data['tx_hash_refund']}")
 
 def on_open(ws):
     ws.send(json.dumps({
@@ -1042,7 +1131,7 @@ ws.run_forever()`} language="python" />
                         { endpoint: "/multi-quote", limit: "30/min" },
                         { endpoint: "/swap", limit: "60/min" },
                         { endpoint: "/multi-swap", limit: "30/min" },
-                        { endpoint: "/orders", limit: "60/min" },
+                        { endpoint: "/swaps", limit: "60/min" },
                         { endpoint: "WebSocket", limit: "100 msg/min" },
                       ].map((item) => (
                         <div key={item.endpoint} className="flex justify-between py-3 px-4 border border-[var(--border)] rounded-lg bg-[var(--bg-soft)]">
