@@ -4,7 +4,6 @@ import React from "react"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import RegistrationModal from "./RegistrationModal"
 
 interface GlitchCell {
   isInfected: boolean
@@ -40,9 +39,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
   const [showButtons, setShowButtons] = useState(true)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showRegisterModal, setShowRegisterModal] = useState(false)
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [loginError, setLoginError] = useState("")
   const [isTitleAnimating, setIsTitleAnimating] = useState(false)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920)
   const mobileBreakpoint = 1400 // Switch to mobile layout much earlier
@@ -235,44 +231,21 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
     }
   }, [isGlitching])
 
-  const handleLogin = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
+  const handleDocsClick = useCallback(() => {
+    setShowButtons(false)
+    setIsCollapsing(true)
     
-    // Simple test credentials for now
-    if (username === "test" && password === "test") {
-      setLoginError("")
-      setShowLoginModal(false)
-      setShowButtons(false)
-      setIsCollapsing(true)
-      
-      // Start title scaling immediately
-      setTimeout(() => {
-        setIsTitleAnimating(true)
-      }, 100)
-      
-      // Then start glitch animation after a brief delay
-      setTimeout(() => {
-        onButtonClick()
-        startGlitchAnimation()
-      }, 800)
-    } else {
-      setLoginError("Invalid username or password")
-    }
-  }, [username, password, onButtonClick, startGlitchAnimation])
-
-  const handleLoginClick = useCallback(() => {
-    setShowLoginModal(true)
-  }, [])
-
-  const handleCreateWalletClick = useCallback(() => {
-    setShowRegisterModal(true)
-  }, [])
-
-  const handleRegistrationSuccess = useCallback(() => {
-    setShowRegisterModal(false)
-    // Show a message or redirect to login
-    // For now, just close the modal - user will need to verify email first
-  }, [])
+    // Start title scaling immediately
+    setTimeout(() => {
+      setIsTitleAnimating(true)
+    }, 100)
+    
+    // Then start glitch animation after a brief delay
+    setTimeout(() => {
+      onButtonClick()
+      startGlitchAnimation()
+    }, 800)
+  }, [onButtonClick, startGlitchAnimation])
 
   const handleButtonClick = useCallback(() => {
     setIsCollapsing(true)
@@ -713,7 +686,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           </div>
         )}
 
-        {/* Top Right - Buttons */}
+        {/* Top Right - Docs Button */}
         <AnimatePresence mode="wait">
           {!showLoginModal && !showRegisterModal && showButtons && (
             <motion.div 
@@ -725,18 +698,11 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               style={{ pointerEvents: 'auto' }}
             >
               <button
-                onClick={handleLoginClick}
-                className="px-6 py-2 bg-transparent border-2 border-white text-white text-base hover:bg-white hover:text-black transition-all duration-200 rounded-lg"
+                onClick={handleDocsClick}
+                className="px-6 py-2 bg-transparent text-white text-base hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
                 style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
               >
-                Login
-              </button>
-              <button
-                onClick={handleCreateWalletClick}
-                className="px-6 py-2 bg-white text-black text-base hover:bg-transparent hover:text-white border-2 border-white transition-all duration-200 rounded-lg"
-                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
-              >
-                Create Wallet
+                Docs
               </button>
             </motion.div>
           )}
@@ -789,201 +755,6 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
         </motion.div>
       </div>
 
-      {/* Login Modal - positioned outside main container */}
-      {showLoginModal && (
-        <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{
-            duration: 0.3,
-            ease: [0.4, 0, 0.2, 1]
-          }}
-          style={{ pointerEvents: 'none' }}
-        >
-          <motion.div
-            className="relative flex flex-col items-center"
-              style={{ 
-                pointerEvents: 'auto',
-                ...(windowWidth >= mobileBreakpoint ? { 
-                  marginLeft: '700px'
-                } : {})
-              }}
-              initial={{ 
-                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
-              }}
-              animate={{ 
-                x: 0,
-                scale: 1,
-                opacity: 1
-              }}
-              exit={{ 
-                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
-              }}
-              transition={{
-                duration: 0.5,
-                ease: [0.4, 0, 0.2, 1]
-              }}
-            >
-              {/* Show title above modal on mobile */}
-              {windowWidth < mobileBreakpoint && (
-                <div className="mb-8 flex items-center justify-center relative" 
-                    style={{ width: 'clamp(12rem, 50vw, 32rem)', height: 'clamp(12rem, 50vw, 32rem)' }}>
-                  <img 
-                    src="/triangle-logo-clean.png" 
-                    alt="Triangle Logo" 
-                    className="w-full h-full object-contain"
-                    style={{
-                      filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
-                      imageRendering: 'crisp-edges'
-                    }}
-                  />
-                  <div 
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
-                      mixBlendMode: 'multiply',
-                      opacity: 0.4
-                    }}
-                  />
-                </div>
-              )}
-              <div className="bg-black bg-opacity-20 border-2 border-white rounded-lg p-4 sm:p-6 md:p-8 w-[90vw] sm:w-[28rem] md:w-[32rem] max-w-[32rem]">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>Login</h2>
-                  <button
-                    onClick={() => {
-                      setShowLoginModal(false)
-                      setLoginError("")
-                      setUsername("")
-                      setPassword("")
-                    }}
-                    className="text-white hover:text-gray-300 transition-colors"
-                    type="button"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                </div>
-                
-                <form onSubmit={handleLogin} className="space-y-4">
-                  {loginError && (
-                    <div className="bg-red-500 bg-opacity-20 border border-red-400 text-red-100 px-4 py-3 rounded-lg text-sm">
-                      {loginError}
-                    </div>
-                  )}
-                  <div>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value)
-                        if (loginError) setLoginError("")
-                      }}
-                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                      }`}
-                      placeholder="Username"
-                      autoFocus
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value)
-                        if (loginError) setLoginError("")
-                      }}
-                      className={`w-full px-4 py-3 bg-black bg-opacity-30 border rounded-lg focus:outline-none focus:ring-2 text-white placeholder-gray-400 font-sans ${
-                        loginError ? 'border-red-400 focus:ring-red-400' : 'border-white focus:ring-white'
-                      }`}
-                      placeholder="Password"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-3 bg-white text-black font-bold rounded-lg transition-all duration-200 hover:bg-opacity-90"
-                  >
-                    Login
-                  </button>
-                </form>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-      {/* Registration Modal - positioned outside main container */}
-      {showRegisterModal && (
-        <motion.div
-          className="fixed inset-0 z-[200] flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{
-            duration: 0.3,
-            ease: [0.4, 0, 0.2, 1]
-          }}
-          style={{ pointerEvents: 'none' }}
-        >
-          <motion.div
-            className="relative flex flex-col items-center"
-              style={{ 
-                pointerEvents: 'auto',
-                ...(windowWidth >= mobileBreakpoint ? { 
-                  marginLeft: '700px'
-                } : {})
-              }}
-              initial={{ 
-                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
-              }}
-              animate={{ 
-                x: 0,
-                scale: 1,
-                opacity: 1
-              }}
-              exit={{ 
-                ...(windowWidth >= mobileBreakpoint ? { x: 400, opacity: 0 } : { scale: 0.9, opacity: 0 })
-              }}
-              transition={{
-                duration: 0.5,
-                ease: [0.4, 0, 0.2, 1]
-              }}
-            >
-              {/* Show title above modal on mobile */}
-              {windowWidth < mobileBreakpoint && (
-                <div className="mb-8 flex items-center justify-center relative" 
-                    style={{ width: 'clamp(12rem, 50vw, 32rem)', height: 'clamp(12rem, 50vw, 32rem)' }}>
-                  <img 
-                    src="/triangle-logo-clean.png" 
-                    alt="Triangle Logo" 
-                    className="w-full h-full object-contain"
-                    style={{
-                      filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) contrast(1.05) brightness(0.98)',
-                      imageRendering: 'crisp-edges'
-                    }}
-                  />
-                  <div 
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px)',
-                      mixBlendMode: 'multiply',
-                      opacity: 0.4
-                    }}
-                  />
-                </div>
-              )}
-              <RegistrationModal
-                isOpen={showRegisterModal}
-                onClose={() => setShowRegisterModal(false)}
-                onSuccess={handleRegistrationSuccess}
-              />
-          </motion.div>
-        </motion.div>
-      )}
     </React.Fragment>
   )
 }

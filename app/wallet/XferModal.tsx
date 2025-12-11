@@ -138,13 +138,13 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
   }
 
   return (
-    <div className="w-full px-8">
-      <div className="w-full max-w-3xl mx-auto pt-6">
+    <div className="w-full">
+      <div className="w-full max-w-3xl mx-auto">
         {/* Content */}
-        <div className="px-6 pb-6">
-          <div className="space-y-6">
+        <div className="px-8 pb-6">
+          <div className="space-y-8">
             {/* Asset Selector - Top Toggle Switch */}
-            <div className="flex justify-start py-2 pl-0">
+            <div className="flex justify-start">
               <div 
                 className="relative inline-flex items-center cursor-pointer"
                 onClick={() => setSelectedAsset(prev => prev === 'CC' ? 'CUSD' : 'CC')}
@@ -155,13 +155,13 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                   checked={selectedAsset === 'CUSD'}
                   readOnly
                 />
-                <div className={`relative h-8 w-32 rounded-full border-2 transition-colors ${
+                <div className={`relative h-10 w-36 rounded-full border-2 transition-colors ${
                   theme === 'dark' 
                     ? 'bg-[#2a2a2a] border-[#3a3a3a]' 
                     : 'bg-gray-300 border-gray-400'
                 }`}>
                   {/* Sliding knob - smaller gray background */}
-                  <div className={`absolute top-[2px] h-[calc(100%-4px)] w-14 rounded-full shadow-sm transition-all duration-300 ${
+                  <div className={`absolute top-[2px] h-[calc(100%-4px)] w-16 rounded-full shadow-sm transition-all duration-300 ${
                     theme === 'dark' ? 'bg-[#5a5a5a]' : 'bg-gray-400'
                   } ${
                     selectedAsset === 'CC' 
@@ -172,14 +172,14 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                   {/* Static labels - always in same position */}
                   <div className="absolute inset-0 flex">
                     <div className="flex-1 flex items-center justify-center">
-                      <span className={`text-xs font-bold transition-colors ${
+                      <span className={`text-sm font-bold transition-colors ${
                         selectedAsset === 'CC' 
                           ? 'text-white' 
                           : theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
                       }`}>CC</span>
                     </div>
                     <div className="flex-1 flex items-center justify-center">
-                      <span className={`text-xs font-bold transition-colors ${
+                      <span className={`text-sm font-bold transition-colors ${
                         selectedAsset === 'CUSD' 
                           ? 'text-white' 
                           : theme === 'dark' ? 'text-[#999]' : 'text-gray-600'
@@ -191,15 +191,15 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
             </div>
             
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className={`block text-xs font-bold ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>address</label>
+              <div className="flex items-center justify-between mb-3">
+                <label className={`block text-sm font-bold ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>address</label>
                 <button
                   onClick={() => setShowAddressBook(!showAddressBook)}
-                  className={`text-sm transition-colors flex items-center gap-1 ${
+                  className={`text-base transition-colors flex items-center gap-2 ${
                     theme === 'dark' ? 'text-[#999] hover:text-white' : 'text-gray-600 hover:text-black'
                   }`}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                   </svg>
@@ -211,7 +211,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                 placeholder="bron::..." 
                 value={toAddress}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToAddress(e.target.value)}
-                className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all rounded-lg ${
+                className={`w-full px-6 py-5 border-2 bg-transparent focus:outline-none transition-all rounded-lg text-lg ${
                   theme === 'dark' 
                     ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-[#666]'
                     : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
@@ -220,13 +220,13 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
             </div>
 
             <div>
-              <label className={`block text-xs font-bold mb-2 ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>amount</label>
+              <label className={`block text-sm font-bold mb-3 ${theme === 'dark' ? 'text-[#ccc]' : 'text-gray-700'}`}>amount</label>
               <input 
                 type="number" 
                 placeholder="0.00"
                 value={amount}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
-                className={`w-full px-4 py-4 border-2 bg-transparent focus:outline-none transition-all text-xl rounded-lg ${
+                className={`w-full px-6 py-5 border-2 bg-transparent focus:outline-none transition-all text-2xl rounded-lg ${
                   theme === 'dark' 
                     ? 'border-[#3a3a3a] focus:border-white text-[#999] placeholder-[#666]'
                     : 'border-gray-300 focus:border-gray-600 text-gray-600 placeholder-gray-400'
@@ -234,8 +234,8 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
               />
               
               {/* Available Balance */}
-              <div className="flex items-center justify-between mt-2">
-                <p className={`text-sm ${theme === 'dark' ? 'text-[#999]' : 'text-gray-600'}`}>
+              <div className="flex items-center justify-between mt-3">
+                <p className={`text-base ${theme === 'dark' ? 'text-[#999]' : 'text-gray-600'}`}>
                   Available: <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-black'}`}>{availableBalance.toLocaleString()} {selectedAsset}</span>
                 </p>
                 
@@ -243,7 +243,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handlePercentageClick(25)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       theme === 'dark' 
                         ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white'
                         : 'bg-gray-300 hover:bg-gray-400 text-black'
@@ -253,7 +253,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                   </button>
                   <button
                     onClick={() => handlePercentageClick(50)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       theme === 'dark' 
                         ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white'
                         : 'bg-gray-300 hover:bg-gray-400 text-black'
@@ -263,7 +263,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
                   </button>
                   <button
                     onClick={() => handlePercentageClick(100)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       theme === 'dark' 
                         ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a] text-white'
                         : 'bg-gray-300 hover:bg-gray-400 text-black'
@@ -275,7 +275,7 @@ export default function XferModal({ isOpen, onClose }: XferModalProps) {
               </div>
             </div>
             
-            <button className={`w-full px-6 py-4 text-white font-bold text-xl rounded-lg transition-colors ${
+            <button className={`w-full px-6 py-5 text-white font-bold text-2xl rounded-lg transition-colors ${
               theme === 'dark' ? 'bg-[#3a3a3a] hover:bg-[#4a4a4a]' : 'bg-gray-400 hover:bg-gray-500'
             }`}>
               SEND {selectedAsset}

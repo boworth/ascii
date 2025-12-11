@@ -40,10 +40,10 @@ export default function Home() {
   }, [])
 
   const handleGlitchComplete = useCallback(() => {
-    console.log("Glitch effect completed, navigating to wallet")
+    console.log("Glitch effect completed, navigating to docs")
     setIsGlitchComplete(true)
-    // Navigate directly to wallet immediately
-    router.push("/wallet")
+    // Navigate directly to docs immediately
+    router.push("/docs")
   }, [router])
 
 
