@@ -679,8 +679,8 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
       >
         {/* Top Left - TRNG.le Title */}
         {!showLoginModal && !showRegisterModal && showButtons && (
-          <div className="fixed top-8 left-8 z-[10002]" style={{ pointerEvents: 'auto' }}>
-            <h1 className="text-8xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
+          <div className="fixed top-4 left-4 md:top-8 md:left-8 z-[10002]" style={{ pointerEvents: 'auto' }}>
+            <h1 className="text-5xl md:text-8xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
               TRNG.le
             </h1>
           </div>
@@ -694,12 +694,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed top-8 right-8 z-[10002] flex gap-3"
+              className="fixed top-4 right-4 md:top-8 md:right-8 z-[10002] flex gap-3"
               style={{ pointerEvents: 'auto' }}
             >
               <button
                 onClick={handleDocsClick}
-                className="px-6 py-2 bg-transparent text-white text-base hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
+                className="px-4 py-1.5 md:px-6 md:py-2 bg-transparent text-white text-sm md:text-base hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
                 style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
               >
                 Docs
@@ -714,7 +714,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           className="fixed inset-0 flex items-center justify-center"
           animate={{
             x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0,
-            scale: isTitleAnimating ? 1.3 : 1
+            scale: isTitleAnimating ? 1.3 : (windowWidth < 768 ? 0.6 : 1)
           }}
           transition={{
             x: {

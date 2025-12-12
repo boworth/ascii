@@ -4,6 +4,8 @@ import { useState, type MouseEvent, type FormEvent } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThemeProvider, useTheme } from "../wallet/ThemeContext"
 import { CodeBlock } from "./components/CodeBlock"
+import * as React from 'react'
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 // Contact Modal Component
 function ContactModal({ 
@@ -864,6 +866,15 @@ function DocsPageContent() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null)
   const [showContactModal, setShowContactModal] = useState(false)
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set())
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const toggleEventExpanded = (event: string) => {
     setExpandedEvents((prev: Set<string>) => {
@@ -920,7 +931,7 @@ function DocsPageContent() {
 
   return (
     <main 
-      className={`theme-transition relative h-screen flex flex-col select-none overflow-hidden p-12 ${
+      className={`theme-transition relative h-screen flex flex-col select-none overflow-hidden p-4 md:p-12 ${
         theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-100'
       }`}
       onMouseMove={handleMouseMove}
@@ -978,7 +989,7 @@ function DocsPageContent() {
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
-            className={`fixed bottom-20 right-20 z-50 p-4 rounded-full transition-all duration-300 shadow-lg ${
+            className={`fixed bottom-6 right-6 md:bottom-20 md:right-20 z-50 p-3 md:p-4 rounded-full transition-all duration-300 shadow-lg ${
               theme === 'dark' 
                 ? 'bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300' 
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
@@ -1004,66 +1015,169 @@ function DocsPageContent() {
             )}
           </button>
           
-          {/* Left Sidebar - Navigation */}
-          <div className={`w-80 flex-shrink-0 border-r overflow-y-auto ${
-            theme === 'dark' ? 'border-[#2a2a2a]' : 'border-gray-200'
-          }`}>
-            <div className="p-8">
-              {/* Header */}
-              <div className="mb-8">
-                <h1 className={`text-5xl font-bold transition-colors ${
-                  theme === 'dark' ? 'text-white' : 'text-black'
-                }`}>TRNG.le</h1>
-                <div className="flex items-baseline gap-2 mt-1 ml-1">
-                  <span className={`text-2xl font-bold transition-colors ${
-                    theme === 'dark' ? 'text-white' : 'text-black'
-                  }`}>API</span>
-                  <span className={`text-xl font-normal transition-colors ${
-                    theme === 'dark' ? 'text-white' : 'text-black'
-                  }`} style={{ fontFamily: 'var(--font-roboto-mono), "Roboto Mono", monospace' }}>v1.0</span>
-                </div>
-              </div>
-
-              {/* Base URL */}
-              <div className="mb-8">
-                <span className="text-xs text-[var(--fg-dim)] uppercase tracking-wider">Base URL</span>
-                <p className="font-mono text-sm mt-1 text-[var(--fg-muted)]">https://trngle.xyz/v1</p>
-              </div>
-
-              {/* Navigation */}
-              <nav className="space-y-6">
-                {navItems.map((category) => (
-                  <div key={category.category}>
-                    <h3 className="text-xs font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-3">
-                      {category.category}
-                    </h3>
-                    <div className="space-y-1">
-                      {category.items.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => setSelectedEndpoint(selectedEndpoint === item.id ? null : item.id)}
-                          className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-3 ${
-                            selectedEndpoint === item.id
-                              ? theme === 'dark'
-                                ? 'bg-[#2a2a2a] text-white'
-                                : 'bg-gray-100 text-black'
-                              : theme === 'dark'
-                                ? 'hover:bg-[#242424] text-[var(--fg-muted)]'
-                                : 'hover:bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          <span className={`font-mono text-xs font-medium w-10 ${methodColors[item.method]}`}>
-                            {item.method}
-                          </span>
-                          <span className="text-sm truncate">{item.label}</span>
-                        </button>
-                      ))}
+          {/* Mobile Menu Button */}
+          {isMobile === true && (
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className={`fixed top-6 left-6 z-50 p-2 transition-all ${
+                    theme === 'dark'
+                      ? 'text-white hover:text-zinc-300'
+                      : 'text-gray-900 hover:text-gray-600'
+                  }`}
+                >
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+              </SheetTrigger>
+              <SheetContent 
+                side="left" 
+                className={`w-80 p-0 ${
+                  theme === 'dark' 
+                    ? 'bg-[#1a1a1a] border-[#3a3a3a]' 
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="p-8 overflow-y-auto h-full">
+                  {/* Header */}
+                  <div className="mb-8">
+                    <h1 className={`text-5xl font-bold transition-colors ${
+                      theme === 'dark' ? 'text-white' : 'text-black'
+                    }`}>TRNG.le</h1>
+                    <div className="flex items-baseline gap-2 mt-1 ml-1">
+                      <span className={`text-2xl font-bold transition-colors ${
+                        theme === 'dark' ? 'text-white' : 'text-black'
+                      }`}>API</span>
+                      <span className={`text-xl font-normal transition-colors ${
+                        theme === 'dark' ? 'text-white' : 'text-black'
+                      }`} style={{ fontFamily: 'var(--font-roboto-mono), "Roboto Mono", monospace' }}>v1.0</span>
                     </div>
                   </div>
-                ))}
-              </nav>
+
+                  {/* Base URL */}
+                  <div className="mb-8">
+                    <span className={`text-xs uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'
+                    }`}>Base URL</span>
+                    <p className={`font-mono text-sm mt-1 ${
+                      theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'
+                    }`}>https://trngle.xyz/v1</p>
+                  </div>
+
+                  {/* Navigation */}
+                  <nav className="space-y-6">
+                    {navItems.map((category) => (
+                      <div key={category.category}>
+                        <h3 className={`text-xs font-medium uppercase tracking-wider mb-3 ${
+                          theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'
+                        }`}>
+                          {category.category}
+                        </h3>
+                        <div className="space-y-1">
+                          {category.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setSelectedEndpoint(selectedEndpoint === item.id ? null : item.id)
+                                setSidebarOpen(false)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-3 ${
+                                selectedEndpoint === item.id
+                                  ? theme === 'dark'
+                                    ? 'bg-[#2a2a2a] text-white'
+                                    : 'bg-gray-100 text-black'
+                                  : theme === 'dark'
+                                    ? 'hover:bg-[#242424] text-zinc-400'
+                                    : 'hover:bg-gray-50 text-gray-600'
+                              }`}
+                            >
+                              <span className={`font-mono text-xs font-medium w-10 ${
+                                item.method === 'GET' ? (theme === 'dark' ? 'text-green-400' : 'text-green-600') :
+                                item.method === 'POST' ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') :
+                                item.method === 'WS' ? (theme === 'dark' ? 'text-purple-400' : 'text-purple-600') :
+                                item.method === 'REF' ? (theme === 'dark' ? 'text-zinc-500' : 'text-gray-500') :
+                                item.method === 'INFO' ? (theme === 'dark' ? 'text-cyan-400' : 'text-cyan-600') :
+                                (theme === 'dark' ? 'text-zinc-400' : 'text-gray-600')
+                              }`}>
+                                {item.method}
+                              </span>
+                              <span className="text-sm truncate">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+
+          {/* Left Sidebar - Navigation (Desktop only) */}
+          {isMobile === false && (
+            <div className={`w-80 flex-shrink-0 border-r overflow-y-auto ${
+              theme === 'dark' ? 'border-[#2a2a2a]' : 'border-gray-200'
+            }`}>
+              <div className="p-8">
+                {/* Header */}
+                <div className="mb-8">
+                  <h1 className={`text-5xl font-bold transition-colors ${
+                    theme === 'dark' ? 'text-white' : 'text-black'
+                  }`}>TRNG.le</h1>
+                  <div className="flex items-baseline gap-2 mt-1 ml-1">
+                    <span className={`text-2xl font-bold transition-colors ${
+                      theme === 'dark' ? 'text-white' : 'text-black'
+                    }`}>API</span>
+                    <span className={`text-xl font-normal transition-colors ${
+                      theme === 'dark' ? 'text-white' : 'text-black'
+                    }`} style={{ fontFamily: 'var(--font-roboto-mono), "Roboto Mono", monospace' }}>v1.0</span>
+                  </div>
+                </div>
+
+                {/* Base URL */}
+                <div className="mb-8">
+                  <span className="text-xs text-[var(--fg-dim)] uppercase tracking-wider">Base URL</span>
+                  <p className="font-mono text-sm mt-1 text-[var(--fg-muted)]">https://trngle.xyz/v1</p>
+                </div>
+
+                {/* Navigation */}
+                <nav className="space-y-6">
+                  {navItems.map((category) => (
+                    <div key={category.category}>
+                      <h3 className="text-xs font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-3">
+                        {category.category}
+                      </h3>
+                      <div className="space-y-1">
+                        {category.items.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedEndpoint(selectedEndpoint === item.id ? null : item.id)}
+                            className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-3 ${
+                              selectedEndpoint === item.id
+                                ? theme === 'dark'
+                                  ? 'bg-[#2a2a2a] text-white'
+                                  : 'bg-gray-100 text-black'
+                                : theme === 'dark'
+                                  ? 'hover:bg-[#242424] text-[var(--fg-muted)]'
+                                  : 'hover:bg-gray-50 text-gray-600'
+                            }`}
+                          >
+                            <span className={`font-mono text-xs font-medium w-10 ${methodColors[item.method]}`}>
+                              {item.method}
+                            </span>
+                            <span className="text-sm truncate">{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </nav>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Right Content Area */}
           <div className="flex-1 relative overflow-hidden min-h-0">
@@ -1076,7 +1190,7 @@ function DocsPageContent() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full flex items-center justify-center p-12"
+                  className="h-full flex items-center justify-center p-6 pt-20 md:p-12"
                 >
                   <div className="max-w-xl text-center">
                     <h2 className="text-3xl font-semibold text-[var(--fg)] mb-4">TRNG.le API</h2>
@@ -1097,16 +1211,32 @@ function DocsPageContent() {
                       <p className="text-[var(--fg-muted)] mb-4">
                         To get an API key, please reach out to us.
                       </p>
-                      <button
-                        onClick={() => setShowContactModal(true)}
-                        className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                          theme === 'dark'
-                            ? 'bg-white text-black hover:bg-zinc-200'
-                            : 'bg-black text-white hover:bg-gray-800'
-                        }`}
-                      >
-                        Contact Us
-                      </button>
+                      <div className="flex gap-4 justify-center">
+                        <button
+                          onClick={() => setShowContactModal(true)}
+                          className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+                            theme === 'dark'
+                              ? 'bg-white text-black hover:bg-zinc-200'
+                              : 'bg-black text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          Contact Us
+                        </button>
+                        <a
+                          href="/API_DOCS.md"
+                          download="TRNGLE_API_DOCS.md"
+                          className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                            theme === 'dark'
+                              ? 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a] border border-[#3a3a3a]'
+                              : 'bg-gray-100 text-black hover:bg-gray-200 border border-gray-300'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download Docs
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -1118,7 +1248,7 @@ function DocsPageContent() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full overflow-y-auto p-12"
+                  className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div>
                     <div className="flex items-center gap-4 mb-2">
@@ -1138,7 +1268,7 @@ function DocsPageContent() {
                     </div>
 
                     {/* Two Column Layout */}
-                    <div className="flex gap-8">
+                    <div className="flex flex-col lg:flex-row gap-8">
                       {/* Left Column - Commands & Events */}
                       <div className="flex-1 min-w-0 space-y-8">
                         <div>
@@ -1208,7 +1338,7 @@ function DocsPageContent() {
                       </div>
 
                       {/* Right Column - Python Example */}
-                      <div className="w-[650px] flex-shrink-0">
+                      <div className="w-full lg:w-[650px] flex-shrink-0">
                         <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2">
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
@@ -1269,13 +1399,13 @@ ws.run_forever()`} language="python" />
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full overflow-y-auto p-12"
+                  className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div className="max-w-3xl">
                     <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6">Error Codes</h2>
                     
-                    <div className="border border-[var(--border)] rounded-lg overflow-hidden">
-                      <table className="w-full">
+                    <div className="border border-[var(--border)] rounded-lg overflow-x-auto">
+                      <table className="w-full min-w-[500px]">
                         <thead>
                           <tr className="border-b border-[var(--border)] bg-[var(--bg-soft)]">
                             <th className="text-left p-4 font-medium text-[var(--fg-muted)]">Code</th>
@@ -1310,7 +1440,7 @@ ws.run_forever()`} language="python" />
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full overflow-y-auto p-12"
+                  className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div className="max-w-3xl">
                     <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6">Rate Limits</h2>
@@ -1341,7 +1471,7 @@ ws.run_forever()`} language="python" />
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full overflow-y-auto p-12"
+                  className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div>
                     {/* Header */}
@@ -1377,7 +1507,7 @@ ws.run_forever()`} language="python" />
                     )}
 
                     {/* Two Column Layout: Left (Request/Response/Errors) | Right (Python) */}
-                    <div className="flex gap-8">
+                    <div className="flex flex-col lg:flex-row gap-8">
                       {/* Left Column - Request Body, Response, Errors */}
                       <div className="flex-1 min-w-0 space-y-8">
                         {/* Request Body */}
@@ -1420,7 +1550,7 @@ ws.run_forever()`} language="python" />
 
                       {/* Right Column - Python Example */}
                       {selectedData.pythonExample && (
-                        <div className="w-[650px] flex-shrink-0">
+                        <div className="w-full lg:w-[650px] flex-shrink-0">
                           <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2">
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
