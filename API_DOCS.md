@@ -619,7 +619,7 @@ print(f"Received: {swap['amount_out']}")
 
 ### WS /ws
 
-Connect to receive real-time order updates.
+Connect to receive real-time order updates. The WebSocket provides push notifications for quote creation, expiry, swap lifecycle events, and refunds.
 
 **URL:**
 
@@ -627,41 +627,148 @@ Connect to receive real-time order updates.
 wss://trngle.xyz/v1/ws?api_key=your_key
 ```
 
-**Subscribe:**
+**Client Commands:**
 
+Ping (keep-alive):
 ```json
-{ "action": "subscribe", "wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab" }
+{ "action": "ping" }
 ```
 
-**Events:**
+Subscribe to wallet updates:
+```json
+{ "action": "subscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }
+```
 
-Order update:
+Unsubscribe from wallet:
+```json
+{ "action": "unsubscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }
+```
+
+**Server Events:**
+
+All events include `type` and `timestamp` fields.
+
+| Event Type | Description |
+|------------|-------------|
+| `connected` | Successfully authenticated |
+| `pong` | Response to ping |
+| `quote_created` | New quote created |
+| `quote_expired` | Quote TTL expired |
+| `swap_submitted` | Swap request received |
+| `swap_verifying` | Verifying deposit transaction |
+| `swap_verified` | Deposit confirmed |
+| `swap_processing` | Sending payout |
+| `swap_completed` | Payout successful |
+| `swap_failed` | Swap failed (verification or payout) |
+| `refund_initiated` | Refund started |
+| `refund_completed` | Refund sent |
+
+**Event Examples:**
+
+Connected:
 ```json
 {
-  "type": "order_update",
-  "order_id": "ord_abc123xyz",
-  "status": "processing"
+  "type": "connected",
+  "timestamp": 1702312345.123,
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "tier": "standard",
+  "message": "Connected to TRNG.le WebSocket"
 }
 ```
 
-Order complete:
+Quote created:
 ```json
 {
-  "type": "order_complete",
+  "type": "quote_created",
+  "timestamp": 1702312345.123,
   "order_id": "ord_abc123xyz",
-  "status": "completed",
-  "tx_hash_out": "1220def456789abc0123456789abcdef0123456789abcdef0123456789abcdef01"
+  "from_token": "CC",
+  "to_token": "CBTC",
+  "amount_in": "10000",
+  "amount_out": "0.00803",
+  "spread_bps": 5.0,
+  "usd_value": "725.30",
+  "payment_address": "f057be3ea9bb...::1220treasury...",
+  "expires_at": 1702312375
 }
 ```
 
-Order failed:
+Quote expired:
 ```json
 {
-  "type": "order_failed",
+  "type": "quote_expired",
+  "timestamp": 1702312375.123,
   "order_id": "ord_abc123xyz",
-  "status": "failed",
-  "error": "QUOTE_EXPIRED",
-  "tx_hash_refund": "1220987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcb"
+  "reason": "TTL expired"
+}
+```
+
+Swap submitted:
+```json
+{
+  "type": "swap_submitted",
+  "timestamp": 1702312350.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash": "12207092272c8c9e...",
+  "from_wallet": "f057be3ea9bb...::1220sender...",
+  "to_wallet": "f057be3ea9bb...::1220receiver..."
+}
+```
+
+Swap verified:
+```json
+{
+  "type": "swap_verified",
+  "timestamp": 1702312355.123,
+  "order_id": "ord_abc123xyz",
+  "amount_received": "10000"
+}
+```
+
+Swap completed:
+```json
+{
+  "type": "swap_completed",
+  "timestamp": 1702312360.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash_out": "1220def456789abc...",
+  "amount_out": "0.00803",
+  "to_wallet": "f057be3ea9bb...::1220receiver..."
+}
+```
+
+Swap failed:
+```json
+{
+  "type": "swap_failed",
+  "timestamp": 1702312360.123,
+  "order_id": "ord_abc123xyz",
+  "error": "VERIFICATION_FAILED",
+  "message": "Amount mismatch: expected 10000, got 9000",
+  "stage": "verification"
+}
+```
+
+Refund initiated:
+```json
+{
+  "type": "refund_initiated",
+  "timestamp": 1702312365.123,
+  "order_id": "ord_abc123xyz",
+  "reason": "Quote had expired when transaction was submitted",
+  "amount": "10000",
+  "to_wallet": "f057be3ea9bb...::1220sender..."
+}
+```
+
+Refund completed:
+```json
+{
+  "type": "refund_completed",
+  "timestamp": 1702312370.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash_refund": "1220987654321fed...",
+  "amount": "9999.5"
 }
 ```
 
@@ -673,16 +780,26 @@ import json
 
 def on_message(ws, message):
     data = json.loads(message)
-    if data["type"] == "order_complete":
-        print(f"Order {data['order_id']} done!")
-    elif data["type"] == "order_failed":
-        print(f"Order {data['order_id']} failed: {data['error']}")
-        print(f"Refund tx: {data['tx_hash_refund']}")
+    event_type = data["type"]
+    
+    if event_type == "connected":
+        print(f"Connected as {data['tier']} tier")
+    elif event_type == "quote_created":
+        print(f"Quote {data['order_id']}: {data['amount_in']} {data['from_token']} → {data['amount_out']} {data['to_token']}")
+    elif event_type == "swap_verified":
+        print(f"Swap {data['order_id']} verified, received {data['amount_received']}")
+    elif event_type == "swap_completed":
+        print(f"Swap {data['order_id']} complete! Tx: {data['tx_hash_out']}")
+    elif event_type == "swap_failed":
+        print(f"Swap {data['order_id']} failed: {data['message']}")
+    elif event_type == "refund_completed":
+        print(f"Refund sent: {data['amount']} (tx: {data['tx_hash_refund']})")
 
 def on_open(ws):
+    # Optionally subscribe to specific wallet updates
     ws.send(json.dumps({
         "action": "subscribe",
-        "wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab"
+        "wallet": "f057be3ea9bbfaed954f8a4399e0a2db::1220a2884e3a763c516aa19e4d0224fdf8821f2cafe66a22b398896e115ba0e8e67d"
     }))
 
 ws = websocket.WebSocketApp(

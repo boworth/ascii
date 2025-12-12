@@ -983,7 +983,7 @@ function DocsPageContent() {
                       <code className="text-xl text-[var(--fg)]">/ws</code>
                     </div>
                     <p className="text-[var(--fg-muted)] mb-8">
-                      Connect to receive real-time order updates.
+                      Connect to receive real-time order updates. Get push notifications for quote creation, expiry, swap lifecycle events, and refunds.
                     </p>
 
                     {/* URL - Full Width */}
@@ -994,41 +994,107 @@ function DocsPageContent() {
 
                     {/* Two Column Layout */}
                     <div className="flex gap-8">
-                      {/* Left Column - Subscribe & Events */}
+                      {/* Left Column - Commands & Events */}
                       <div className="flex-1 min-w-0 space-y-8">
                         <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Subscribe</h3>
-                          <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "f057be3ea9bb..." }`} language="json" />
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Client Commands</h3>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Ping (keep-alive)</p>
+                              <CodeBlock theme={theme} code={`{ "action": "ping" }`} language="json" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Subscribe to wallet</p>
+                              <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }`} language="json" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Unsubscribe</p>
+                              <CodeBlock theme={theme} code={`{ "action": "unsubscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }`} language="json" />
+                            </div>
+                          </div>
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Events</h3>
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Event Types</h3>
+                          <div className="border border-[var(--border)] rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-[var(--border)] bg-[var(--bg-soft)]">
+                                  <th className="text-left p-3 font-medium text-[var(--fg-muted)]">Event</th>
+                                  <th className="text-left p-3 font-medium text-[var(--fg-muted)]">Description</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[var(--border)]">
+                                {[
+                                  { event: "connected", desc: "Successfully authenticated" },
+                                  { event: "pong", desc: "Response to ping" },
+                                  { event: "quote_created", desc: "New quote created" },
+                                  { event: "quote_expired", desc: "Quote TTL expired" },
+                                  { event: "swap_submitted", desc: "Swap request received" },
+                                  { event: "swap_verifying", desc: "Verifying deposit" },
+                                  { event: "swap_verified", desc: "Deposit confirmed" },
+                                  { event: "swap_completed", desc: "Payout successful" },
+                                  { event: "swap_failed", desc: "Swap failed" },
+                                  { event: "refund_initiated", desc: "Refund started" },
+                                  { event: "refund_completed", desc: "Refund sent" },
+                                ].map((item) => (
+                                  <tr key={item.event}>
+                                    <td className="p-3 font-mono text-[var(--aqua)]">{item.event}</td>
+                                    <td className="p-3 text-[var(--fg-muted)]">{item.desc}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Event Examples</h3>
                           <div className="space-y-4">
                             <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-3">Order update</p>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Quote created</p>
                               <CodeBlock theme={theme} code={`{
-  "type": "order_update",
+  "type": "quote_created",
+  "timestamp": 1702312345.123,
   "order_id": "ord_abc123xyz",
-  "status": "processing"
+  "from_token": "CC",
+  "to_token": "CBTC",
+  "amount_in": "10000",
+  "amount_out": "0.00803",
+  "spread_bps": 5.0,
+  "expires_at": 1702312375
 }`} language="json" />
                             </div>
                             <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-3">Order complete</p>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Swap completed</p>
                               <CodeBlock theme={theme} code={`{
-  "type": "order_complete",
+  "type": "swap_completed",
+  "timestamp": 1702312360.123,
   "order_id": "ord_abc123xyz",
-  "status": "completed",
-  "tx_hash_out": "1220def456789abc..."
+  "tx_hash_out": "1220def456789abc...",
+  "amount_out": "0.00803",
+  "to_wallet": "f057be3ea9bb...::1220receiver..."
 }`} language="json" />
                             </div>
                             <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-3">Order failed</p>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Swap failed</p>
                               <CodeBlock theme={theme} code={`{
-  "type": "order_failed",
+  "type": "swap_failed",
+  "timestamp": 1702312360.123,
   "order_id": "ord_abc123xyz",
-  "status": "failed",
-  "error": "QUOTE_EXPIRED",
-  "tx_hash_refund": "1220987654321fed..."
+  "error": "VERIFICATION_FAILED",
+  "message": "Amount mismatch",
+  "stage": "verification"
+}`} language="json" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-[var(--fg-dim)] mb-2">Refund completed</p>
+                              <CodeBlock theme={theme} code={`{
+  "type": "refund_completed",
+  "timestamp": 1702312370.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash_refund": "1220987654321fed...",
+  "amount": "9999.5"
 }`} language="json" />
                             </div>
                           </div>
@@ -1048,13 +1114,28 @@ import json
 
 def on_message(ws, message):
     data = json.loads(message)
-    if data["type"] == "order_complete":
-        print(f"Order {data['order_id']} done!")
-    elif data["type"] == "order_failed":
-        print(f"Order {data['order_id']} failed: {data['error']}")
-        print(f"Refund tx: {data['tx_hash_refund']}")
+    event_type = data["type"]
+    
+    if event_type == "connected":
+        print(f"Connected as {data['tier']} tier")
+    elif event_type == "quote_created":
+        print(f"Quote {data['order_id']}: "
+              f"{data['amount_in']} {data['from_token']} → "
+              f"{data['amount_out']} {data['to_token']}")
+    elif event_type == "swap_verified":
+        print(f"Swap {data['order_id']} verified")
+    elif event_type == "swap_completed":
+        print(f"Swap {data['order_id']} complete!")
+        print(f"Tx: {data['tx_hash_out']}")
+    elif event_type == "swap_failed":
+        print(f"Swap {data['order_id']} failed: "
+              f"{data['message']}")
+    elif event_type == "refund_completed":
+        print(f"Refund sent: {data['amount']}")
+        print(f"Tx: {data['tx_hash_refund']}")
 
 def on_open(ws):
+    # Optionally subscribe to wallet updates
     ws.send(json.dumps({
         "action": "subscribe",
         "wallet": "f057be3ea9bb..."
