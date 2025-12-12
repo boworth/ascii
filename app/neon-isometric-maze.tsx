@@ -714,7 +714,7 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           className="fixed inset-0 flex items-center justify-center"
           animate={{
             x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0,
-            scale: isTitleAnimating ? 1.3 : (windowWidth < 768 ? 0.6 : 1)
+            scale: isTitleAnimating ? 1.3 : 1
           }}
           transition={{
             x: {
@@ -727,12 +727,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             }
           }}
           style={{
-            width: '100vw',
-            height: '100vh',
+            width: windowWidth < 768 ? '150vw' : '100vw',
+            height: windowWidth < 768 ? '60vh' : '100vh',
             zIndex: 1,
             position: 'fixed',
-            top: 0,
-            left: 0,
+            top: windowWidth < 768 ? '20vh' : 0,
+            left: windowWidth < 768 ? '-25vw' : 0,
             opacity: 1
           }}
         >
