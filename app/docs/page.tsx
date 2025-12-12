@@ -410,7 +410,7 @@ print(f"{data['symbol']}: \${data['price']}")`
   "price": "1322751.32",
   "spread_bps": 15,
   "usd_value": "7353.00",
-  "payment_address": "0x7890...",
+  "payment_address": "f057be3ea9bb...",
   "expires_in": 60,
   "expires_at": 1702312405
 }`,
@@ -453,8 +453,8 @@ print(f"Receive: {quote['amount_out']} CBTC")`
     response: `{
   "order_id": "ord_multi_abc123xyz",
   "orders": [
-    { "index": 0, "amount_out": "0.0756", "spread_bps": 15, "payment_address": "0x7890..." },
-    { "index": 1, "amount_out": "0.0378", "spread_bps": 15, "payment_address": "0x7891..." }
+    { "index": 0, "amount_out": "0.0756", "spread_bps": 15, "payment_address": "f057be3ea9bb..." },
+    { "index": 1, "amount_out": "0.0378", "spread_bps": 15, "payment_address": "f057be3ea9bb..." }
   ],
   "total_usd_value": "11029.50",
   "expires_in": 60
@@ -494,9 +494,9 @@ print(f"Total: \${quote['total_usd_value']}")`
     ],
     requestBody: `{
   "order_id": "ord_abc123xyz",
-  "from_wallet": "0x1234...",
-  "to_wallet": "0x5678...",
-  "tx_hash": "0xabcdef..."
+  "from_wallet": "f057be3ea9bb...",
+  "to_wallet": "f057be3ea9bb...",
+  "tx_hash": "12207092272c8c9e7872..."
 }`,
     response: `{
   "valid": true,
@@ -518,9 +518,9 @@ response = requests.post(
     },
     json={
         "order_id": "ord_abc123xyz",
-        "from_wallet": "0x1234...",
-        "to_wallet": "0x5678...",
-        "tx_hash": "0xabcdef..."
+        "from_wallet": "f057be3ea9bb...",
+        "to_wallet": "f057be3ea9bb...",
+        "tx_hash": "12207092272c8c9e7872..."
     }
 )
 
@@ -540,14 +540,14 @@ else:
   "order_id": "ord_multi_abc123xyz",
   "transactions": [
     {
-      "tx_hash": "0xabcdef...",
-      "from_wallet": "0x1234...",
-      "to_wallet": "0x5678..."
+      "tx_hash": "12207092272c8c9e...",
+      "from_wallet": "f057be3ea9bb...",
+      "to_wallet": "f057be3ea9bb..."
     },
     {
-      "tx_hash": "0x098765...",
-      "from_wallet": "0xaaaa...",
-      "to_wallet": "0xbbbb..."
+      "tx_hash": "1220abc3456def78...",
+      "from_wallet": "f057be3ea9bb...",
+      "to_wallet": "f057be3ea9bb..."
     }
   ]
 }`,
@@ -565,14 +565,14 @@ else:
 
 transactions = [
     {
-        "tx_hash": "0xabcdef...",
-        "from_wallet": "0x1234...",
-        "to_wallet": "0x5678..."
+        "tx_hash": "12207092272c8c9e...",
+        "from_wallet": "f057be3ea9bb...",
+        "to_wallet": "f057be3ea9bb..."
     },
     {
-        "tx_hash": "0x098765...",
-        "from_wallet": "0xaaaa...",
-        "to_wallet": "0xbbbb..."
+        "tx_hash": "1220abc3456def78...",
+        "from_wallet": "f057be3ea9bb...",
+        "to_wallet": "f057be3ea9bb..."
     }
 ]
 
@@ -634,7 +634,7 @@ for quote in data["quotes"]:
   "amount_out": "0.0756",
   "price": "1322751.32",
   "spread_bps": 15,
-  "payment_address": "0x7890...",
+  "payment_address": "f057be3ea9bb...",
   "expires_at": 1702312405
 }`,
     pythonExample: `import requests
@@ -694,7 +694,7 @@ for swap in data["swaps"]:
   "to_token": "CBTC",
   "amount_in": "100000",
   "amount_out": "0.0756",
-  "tx_hash_out": "0xdef456...",
+  "tx_hash_out": "1220def456789abc...",
   "created_at": 1702312345,
   "completed_at": 1702312400
 }`,
@@ -998,7 +998,7 @@ function DocsPageContent() {
                       <div className="flex-1 min-w-0 space-y-8">
                         <div>
                           <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Subscribe</h3>
-                          <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "0x1234..." }`} language="json" />
+                          <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "f057be3ea9bb..." }`} language="json" />
                         </div>
 
                         <div>
@@ -1018,7 +1018,7 @@ function DocsPageContent() {
   "type": "order_complete",
   "order_id": "ord_abc123xyz",
   "status": "completed",
-  "tx_hash_out": "0xdef456..."
+  "tx_hash_out": "1220def456789abc..."
 }`} language="json" />
                             </div>
                             <div>
@@ -1028,7 +1028,7 @@ function DocsPageContent() {
   "order_id": "ord_abc123xyz",
   "status": "failed",
   "error": "QUOTE_EXPIRED",
-  "tx_hash_refund": "0x987654..."
+  "tx_hash_refund": "1220987654321fed..."
 }`} language="json" />
                             </div>
                           </div>
@@ -1057,7 +1057,7 @@ def on_message(ws, message):
 def on_open(ws):
     ws.send(json.dumps({
         "action": "subscribe",
-        "wallet": "0x1234..."
+        "wallet": "f057be3ea9bb..."
     }))
 
 ws = websocket.WebSocketApp(

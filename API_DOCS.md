@@ -133,7 +133,7 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
   "price": "1322751.32",
   "spread_bps": 15,
   "usd_value": "7353.00",
-  "payment_address": "0x7890...",
+  "payment_address": "f057be3ea9bbfaed954f8a4399e0a2db::1220a2884e3a763c516aa19e4d0224fdf8821f2cafe66a22b398896e115ba0e8e67d",
   "expires_in": 60,
   "expires_at": 1702312405
 }
@@ -178,7 +178,7 @@ print(f"Receive: {quote['amount_out']} CBTC")
 
 ### POST /multi-quote
 
-Request quotes for multiple swaps in a single request. Maximum 10 orders per request.
+Request quotes for multiple swaps in a single request. Maximum 10 orders per request. 
 
 **Parameters:**
 
@@ -205,8 +205,8 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
 {
   "order_id": "ord_multi_abc123xyz",
   "orders": [
-    { "index": 0, "amount_out": "0.0756", "spread_bps": 15, "payment_address": "0x7890..." },
-    { "index": 1, "amount_out": "0.0378", "spread_bps": 15, "payment_address": "0x7891..." }
+    { "index": 0, "amount_out": "0.0756", "spread_bps": 15, "payment_address": "f057be3ea9bbfaed954f8a4399e0a2db::1220a2884e3a763c516aa19e4d0224fdf8821f2cafe66a22b398896e115ba0e8e67d" },
+    { "index": 1, "amount_out": "0.0378", "spread_bps": 15, "payment_address": "f057be3ea9bbfaed954f8a4399e0a2db::1220b3995f4b874d627bb20f5e1335gef9932g3dbfg77b33c409907f226cb1f9f78e" }
   ],
   "total_usd_value": "11029.50",
   "expires_in": 60
@@ -272,9 +272,9 @@ Execute a quoted order. Send the amount_in to the payment_address from the quote
 ```json
 {
   "order_id": "ord_abc123xyz",
-  "from_wallet": "0x1234...",
-  "to_wallet": "0x5678...",
-  "tx_hash": "0xabcdef..."
+  "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab",
+  "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12205678efab1234cd56ef7890123456abcdef7890abcd1234ef5678abcd9012cd",
+  "tx_hash": "12207092272c8c9e7872bd43abd3ba6a217481b76640b51855ecc601fd3ff06cfad2"
 }
 ```
 
@@ -318,9 +318,9 @@ response = requests.post(
     },
     json={
         "order_id": "ord_abc123xyz",
-        "from_wallet": "0x1234...",
-        "to_wallet": "0x5678...",
-        "tx_hash": "0xabcdef..."
+        "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab",
+        "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12205678efab1234cd56ef7890123456abcdef7890abcd1234ef5678abcd9012cd",
+        "tx_hash": "12207092272c8c9e7872bd43abd3ba6a217481b76640b51855ecc601fd3ff06cfad2"
     }
 )
 
@@ -351,14 +351,14 @@ Execute a multi-order batch across multiple wallets. Send each amount_in to its 
   "order_id": "ord_multi_abc123xyz",
   "transactions": [
     {
-      "tx_hash": "0xabcdef...",
-      "from_wallet": "0x1234...",
-      "to_wallet": "0x5678..."
+      "tx_hash": "12207092272c8c9e7872bd43abd3ba6a217481b76640b51855ecc601fd3ff06cfad2",
+      "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab",
+      "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12205678efab1234cd56ef7890123456abcdef7890abcd1234ef5678abcd9012cd"
     },
     {
-      "tx_hash": "0x098765...",
-      "from_wallet": "0xaaaa...",
-      "to_wallet": "0xbbbb..."
+      "tx_hash": "1220abc3456def7890123456789abcdef0123456789abcdef0123456789abcdef01",
+      "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::1220aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aa",
+      "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::1220bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aaaa1111bb"
     }
   ]
 }
@@ -398,14 +398,14 @@ import requests
 
 transactions = [
     {
-        "tx_hash": "0xabcdef...",
-        "from_wallet": "0x1234...",
-        "to_wallet": "0x5678..."
+        "tx_hash": "12207092272c8c9e7872bd43abd3ba6a217481b76640b51855ecc601fd3ff06cfad2",
+        "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab",
+        "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12205678efab1234cd56ef7890123456abcdef7890abcd1234ef5678abcd9012cd"
     },
     {
-        "tx_hash": "0x098765...",
-        "from_wallet": "0xaaaa...",
-        "to_wallet": "0xbbbb..."
+        "tx_hash": "1220abc3456def7890123456789abcdef0123456789abcdef0123456789abcdef01",
+        "from_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::1220aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aa",
+        "to_wallet": "f057be3ea9bbfaed954f8a4399e0a2db::1220bbbb2222cccc3333dddd4444eeee5555ffff6666777788889999aaaa1111bb"
     }
 ]
 
@@ -496,7 +496,7 @@ Get detailed information about a specific quote.
   "amount_out": "0.0756",
   "price": "1322751.32",
   "spread_bps": 15,
-  "payment_address": "0x7890...",
+  "payment_address": "f057be3ea9bbfaed954f8a4399e0a2db::1220a2884e3a763c516aa19e4d0224fdf8821f2cafe66a22b398896e115ba0e8e67d",
   "expires_at": 1702312405
 }
 ```
@@ -588,7 +588,7 @@ Get detailed information about a specific swap.
   "to_token": "CBTC",
   "amount_in": "100000",
   "amount_out": "0.0756",
-  "tx_hash_out": "0xdef456...",
+  "tx_hash_out": "1220def456789abc0123456789abcdef0123456789abcdef0123456789abcdef01",
   "created_at": 1702312345,
   "completed_at": 1702312400
 }
@@ -630,7 +630,7 @@ wss://trngle.xyz/v1/ws?api_key=your_key
 **Subscribe:**
 
 ```json
-{ "action": "subscribe", "wallet": "0x1234..." }
+{ "action": "subscribe", "wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab" }
 ```
 
 **Events:**
@@ -650,7 +650,7 @@ Order complete:
   "type": "order_complete",
   "order_id": "ord_abc123xyz",
   "status": "completed",
-  "tx_hash_out": "0xdef456..."
+  "tx_hash_out": "1220def456789abc0123456789abcdef0123456789abcdef0123456789abcdef01"
 }
 ```
 
@@ -661,7 +661,7 @@ Order failed:
   "order_id": "ord_abc123xyz",
   "status": "failed",
   "error": "QUOTE_EXPIRED",
-  "tx_hash_refund": "0x987654..."
+  "tx_hash_refund": "1220987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcb"
 }
 ```
 
@@ -682,7 +682,7 @@ def on_message(ws, message):
 def on_open(ws):
     ws.send(json.dumps({
         "action": "subscribe",
-        "wallet": "0x1234..."
+        "wallet": "f057be3ea9bbfaed954f8a4399e0a2db::12201234abcd5678ef90abcd1234567890abcdef12345678abcdef1234567890ab"
     }))
 
 ws = websocket.WebSocketApp(
