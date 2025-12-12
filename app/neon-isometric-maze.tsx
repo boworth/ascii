@@ -677,29 +677,45 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           display: windowWidth < mobileBreakpoint && (showLoginModal || showRegisterModal) ? 'none' : 'flex'
         }}
       >
-        {/* Top Left - TRNG.le Title */}
-        {!showLoginModal && !showRegisterModal && showButtons && (
-          <div className="fixed top-4 left-4 md:top-8 md:left-8 z-[10002]" style={{ pointerEvents: 'auto' }}>
-            <h1 className="text-5xl md:text-8xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
+        {/* Mobile Layout - Centered title with Docs button below */}
+        {windowWidth < 768 && !showLoginModal && !showRegisterModal && showButtons && (
+          <div className="fixed inset-0 flex flex-col items-center justify-center z-[10002]" style={{ pointerEvents: 'auto' }}>
+            <h1 className="text-6xl font-bold text-white mb-8" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
+              TRNG.le
+            </h1>
+            <button
+              onClick={handleDocsClick}
+              className="px-8 py-3 bg-transparent text-white text-lg hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
+              style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
+            >
+              Docs
+            </button>
+          </div>
+        )}
+
+        {/* Desktop Layout - Top Left Title */}
+        {windowWidth >= 768 && !showLoginModal && !showRegisterModal && showButtons && (
+          <div className="fixed top-8 left-8 z-[10002]" style={{ pointerEvents: 'auto' }}>
+            <h1 className="text-8xl font-bold text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
               TRNG.le
             </h1>
           </div>
         )}
 
-        {/* Top Right - Docs Button */}
+        {/* Desktop Layout - Top Right Docs Button */}
         <AnimatePresence mode="wait">
-          {!showLoginModal && !showRegisterModal && showButtons && (
+          {windowWidth >= 768 && !showLoginModal && !showRegisterModal && showButtons && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed top-4 right-4 md:top-8 md:right-8 z-[10002] flex gap-3"
+              className="fixed top-8 right-8 z-[10002] flex gap-3"
               style={{ pointerEvents: 'auto' }}
             >
               <button
                 onClick={handleDocsClick}
-                className="px-4 py-1.5 md:px-6 md:py-2 bg-transparent text-white text-sm md:text-base hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
+                className="px-6 py-2 bg-transparent text-white text-base hover:bg-white hover:text-black border-2 border-white transition-all duration-200 rounded-lg"
                 style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}
               >
                 Docs
@@ -708,51 +724,53 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
           )}
         </AnimatePresence>
 
-        {/* Spline Background - Animates when modal opens and during glitch */}
-        <motion.div 
-          ref={titleRef}
-          className="fixed inset-0 flex items-center justify-center"
-          animate={{
-            x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0,
-            scale: isTitleAnimating ? 1.3 : 1
-          }}
-          transition={{
-            x: {
-              duration: 0.5,
-              ease: [0.4, 0, 0.2, 1]
-            },
-            scale: {
-              duration: isTitleAnimating ? 6.0 : 0.5,
-              ease: isTitleAnimating ? "linear" : [0.4, 0, 0.2, 1]
-            }
-          }}
-          style={{
-            width: '100vw',
-            height: '100vh',
-            zIndex: 1,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            opacity: 1
-          }}
-        >
-          <iframe 
-            id="spline-iframe"
-            src='https://my.spline.design/weirdbubblecopy-4Gvk9sRNR2GYKCwZtbv4jlf2/?controls=false&orbit=false' 
-            frameBorder='0' 
-            width='100%' 
-            height='100%'
-            style={{
-              border: 'none',
-              borderRadius: '0',
-              background: 'transparent',
-              display: 'block',
-              pointerEvents: 'auto'
+        {/* Spline Background - Desktop only */}
+        {windowWidth >= 768 && (
+          <motion.div 
+            ref={titleRef}
+            className="fixed inset-0 flex items-center justify-center"
+            animate={{
+              x: (showRegisterModal || showLoginModal) && windowWidth > mobileBreakpoint ? -450 : 0,
+              scale: isTitleAnimating ? 1.3 : 1
             }}
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-          />
-          
-        </motion.div>
+            transition={{
+              x: {
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+              },
+              scale: {
+                duration: isTitleAnimating ? 6.0 : 0.5,
+                ease: isTitleAnimating ? "linear" : [0.4, 0, 0.2, 1]
+              }
+            }}
+            style={{
+              width: '100vw',
+              height: '100vh',
+              zIndex: 1,
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              opacity: 1
+            }}
+          >
+            <iframe 
+              id="spline-iframe"
+              src='https://my.spline.design/weirdbubblecopy-4Gvk9sRNR2GYKCwZtbv4jlf2/?controls=false&orbit=false' 
+              frameBorder='0' 
+              width='100%' 
+              height='100%'
+              style={{
+                border: 'none',
+                borderRadius: '0',
+                background: 'transparent',
+                display: 'block',
+                pointerEvents: 'auto'
+              }}
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+            />
+            
+          </motion.div>
+        )}
       </div>
 
     </React.Fragment>
