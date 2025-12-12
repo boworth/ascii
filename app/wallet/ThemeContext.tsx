@@ -12,14 +12,15 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
 
-  // Load theme from localStorage on mount
+  // Load theme from localStorage on mount (defaults to dark if not set)
   useEffect(() => {
     const savedTheme = localStorage.getItem('wallet-theme') as Theme
     if (savedTheme) {
       setTheme(savedTheme)
     }
+    // If no saved theme, keep the default 'dark'
   }, [])
 
   const toggleTheme = () => {
