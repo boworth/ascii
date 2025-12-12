@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 // Slack configuration from environment variables
 const SLACK_TOKEN = process.env.SLACK_TOKEN
-const SLACK_CHANNEL = process.env.SLACK_CHANNEL || 'bo_test_slackbot'
+const SLACK_CHANNEL = process.env.SLACK_CHANNEL || 'trngle_outreach'
 
 // Simple in-memory rate limiting (resets on serverless cold start)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
