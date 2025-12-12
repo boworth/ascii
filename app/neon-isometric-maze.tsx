@@ -727,12 +727,12 @@ const NeonIsometricMaze: React.FC<IsometricMazeProps> = ({ onGlitchComplete, onB
             }
           }}
           style={{
-            width: windowWidth < 768 ? '150vw' : '100vw',
-            height: windowWidth < 768 ? '60vh' : '100vh',
+            width: '100vw',
+            height: '100vh',
             zIndex: 1,
             position: 'fixed',
-            top: windowWidth < 768 ? '20vh' : 0,
-            left: windowWidth < 768 ? '-25vw' : 0,
+            top: 0,
+            left: 0,
             opacity: 1
           }}
         >
