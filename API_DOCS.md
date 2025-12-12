@@ -688,7 +688,7 @@ Quote created:
   "amount_out": "0.00803",
   "spread_bps": 5.0,
   "usd_value": "725.30",
-  "payment_address": "f057be3ea9bb...::1220treasury...",
+  "payment_address": "f057be3ea9bb...",
   "expires_at": 1702312375
 }
 ```
@@ -710,8 +710,8 @@ Swap submitted:
   "timestamp": 1702312350.123,
   "order_id": "ord_abc123xyz",
   "tx_hash": "12207092272c8c9e...",
-  "from_wallet": "f057be3ea9bb...::1220sender...",
-  "to_wallet": "f057be3ea9bb...::1220receiver..."
+  "from_wallet": "f057be3ea9bb...",
+  "to_wallet": "f057be3ea9bb..."
 }
 ```
 
@@ -721,7 +721,8 @@ Swap verified:
   "type": "swap_verified",
   "timestamp": 1702312355.123,
   "order_id": "ord_abc123xyz",
-  "amount_received": "10000"
+  "amount_received": "10000",
+  "token_received": "CC"
 }
 ```
 
@@ -733,7 +734,8 @@ Swap completed:
   "order_id": "ord_abc123xyz",
   "tx_hash_out": "1220def456789abc...",
   "amount_out": "0.00803",
-  "to_wallet": "f057be3ea9bb...::1220receiver..."
+  "token_out": "CBTC",
+  "wallet_out": "f057be3ea9bb..."
 }
 ```
 
@@ -757,7 +759,7 @@ Refund initiated:
   "order_id": "ord_abc123xyz",
   "reason": "Quote had expired when transaction was submitted",
   "amount": "10000",
-  "to_wallet": "f057be3ea9bb...::1220sender..."
+  "to_wallet": "f057be3ea9bb..."
 }
 ```
 
@@ -767,8 +769,10 @@ Refund completed:
   "type": "refund_completed",
   "timestamp": 1702312370.123,
   "order_id": "ord_abc123xyz",
-  "tx_hash_refund": "1220987654321fed...",
-  "amount": "9999.5"
+  "tx_hash_out": "1220987654321fed...",
+  "amount_out": "9999.5",
+  "token_out": "CC",
+  "wallet_out": "f057be3ea9bb..."
 }
 ```
 
@@ -787,13 +791,13 @@ def on_message(ws, message):
     elif event_type == "quote_created":
         print(f"Quote {data['order_id']}: {data['amount_in']} {data['from_token']} → {data['amount_out']} {data['to_token']}")
     elif event_type == "swap_verified":
-        print(f"Swap {data['order_id']} verified, received {data['amount_received']}")
+        print(f"Swap {data['order_id']} verified, received {data['amount_received']} {data['token_received']}")
     elif event_type == "swap_completed":
-        print(f"Swap {data['order_id']} complete! Tx: {data['tx_hash_out']}")
+        print(f"Swap {data['order_id']} complete! Sent {data['amount_out']} {data['token_out']} to {data['wallet_out']}")
     elif event_type == "swap_failed":
         print(f"Swap {data['order_id']} failed: {data['message']}")
     elif event_type == "refund_completed":
-        print(f"Refund sent: {data['amount']} (tx: {data['tx_hash_refund']})")
+        print(f"Refund sent: {data['amount_out']} {data['token_out']} to {data['wallet_out']}")
 
 def on_open(ws):
     # Optionally subscribe to specific wallet updates

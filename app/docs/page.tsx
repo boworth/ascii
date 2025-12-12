@@ -725,11 +725,156 @@ const methodColors: Record<string, string> = {
   INFO: "text-[var(--aqua)]",
 }
 
+// WebSocket event data with example payloads
+const wsEvents = [
+  { 
+    event: "connected", 
+    desc: "Successfully authenticated",
+    example: `{
+  "type": "connected",
+  "timestamp": 1702312345.123,
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "tier": "standard",
+  "message": "Connected to TRNG.le WebSocket"
+}`
+  },
+  { 
+    event: "pong", 
+    desc: "Response to ping",
+    example: `{
+  "type": "pong",
+  "timestamp": 1702312345.123
+}`
+  },
+  { 
+    event: "quote_created", 
+    desc: "New quote created",
+    example: `{
+  "type": "quote_created",
+  "timestamp": 1702312345.123,
+  "order_id": "ord_abc123xyz",
+  "from_token": "CC",
+  "to_token": "CBTC",
+  "amount_in": "10000",
+  "amount_out": "0.00803",
+  "spread_bps": 5.0,
+  "usd_value": "725.30",
+  "payment_address": "f057be3ea9bb...",
+  "expires_at": 1702312375
+}`
+  },
+  { 
+    event: "quote_expired", 
+    desc: "Quote TTL expired",
+    example: `{
+  "type": "quote_expired",
+  "timestamp": 1702312375.123,
+  "order_id": "ord_abc123xyz",
+  "reason": "TTL expired"
+}`
+  },
+  { 
+    event: "swap_submitted", 
+    desc: "Swap request received",
+    example: `{
+  "type": "swap_submitted",
+  "timestamp": 1702312350.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash": "12207092272c8c9e...",
+  "from_wallet": "f057be3ea9bb...",
+  "to_wallet": "f057be3ea9bb..."
+}`
+  },
+  { 
+    event: "swap_verifying", 
+    desc: "Verifying deposit",
+    example: `{
+  "type": "swap_verifying",
+  "timestamp": 1702312352.123,
+  "order_id": "ord_abc123xyz",
+  "status": "PENDING_VERIFICATION"
+}`
+  },
+  { 
+    event: "swap_verified", 
+    desc: "Deposit confirmed",
+    example: `{
+  "type": "swap_verified",
+  "timestamp": 1702312355.123,
+  "order_id": "ord_abc123xyz",
+  "amount_received": "10000",
+  "token_received": "CC"
+}`
+  },
+  { 
+    event: "swap_completed", 
+    desc: "Payout successful",
+    example: `{
+  "type": "swap_completed",
+  "timestamp": 1702312360.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash_out": "1220def456789abc...",
+  "amount_out": "0.00803",
+  "token_out": "CBTC",
+  "wallet_out": "f057be3ea9bb..."
+}`
+  },
+  { 
+    event: "swap_failed", 
+    desc: "Swap failed",
+    example: `{
+  "type": "swap_failed",
+  "timestamp": 1702312360.123,
+  "order_id": "ord_abc123xyz",
+  "error": "VERIFICATION_FAILED",
+  "message": "Amount mismatch: expected 10000, got 9000",
+  "stage": "verification"
+}`
+  },
+  { 
+    event: "refund_initiated", 
+    desc: "Refund started",
+    example: `{
+  "type": "refund_initiated",
+  "timestamp": 1702312365.123,
+  "order_id": "ord_abc123xyz",
+  "reason": "Quote had expired when transaction was submitted",
+  "amount": "10000",
+  "to_wallet": "f057be3ea9bb..."
+}`
+  },
+  { 
+    event: "refund_completed", 
+    desc: "Refund sent",
+    example: `{
+  "type": "refund_completed",
+  "timestamp": 1702312370.123,
+  "order_id": "ord_abc123xyz",
+  "tx_hash_out": "1220987654321fed...",
+  "amount_out": "9999.5",
+  "token_out": "CC",
+  "wallet_out": "f057be3ea9bb..."
+}`
+  },
+]
+
 function DocsPageContent() {
   const { theme, toggleTheme } = useTheme()
   const [cursorPosition, setCursorPosition] = useState({ x: 0.5, y: 0.5 })
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null)
   const [showContactModal, setShowContactModal] = useState(false)
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set())
+
+  const toggleEventExpanded = (event: string) => {
+    setExpandedEvents((prev: Set<string>) => {
+      // If clicking the same one, close it
+      if (prev.has(event)) {
+        return new Set()
+      }
+      // Otherwise, close all others and open this one
+      return new Set([event])
+    })
+  }
 
   const handleMouseMove = (e: MouseEvent) => {
     const x = e.clientX / window.innerWidth
@@ -1005,98 +1150,59 @@ function DocsPageContent() {
                             </div>
                             <div>
                               <p className="text-sm text-[var(--fg-dim)] mb-2">Subscribe to wallet</p>
-                              <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }`} language="json" />
+                              <CodeBlock theme={theme} code={`{ "action": "subscribe", "wallet": "f057be3ea9bb..." }`} language="json" />
                             </div>
                             <div>
                               <p className="text-sm text-[var(--fg-dim)] mb-2">Unsubscribe</p>
-                              <CodeBlock theme={theme} code={`{ "action": "unsubscribe", "wallet": "f057be3ea9bb...::1220a2884e3a..." }`} language="json" />
+                              <CodeBlock theme={theme} code={`{ "action": "unsubscribe", "wallet": "f057be3ea9bb..." }`} language="json" />
                             </div>
                           </div>
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Event Types</h3>
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Server Events</h3>
+                          <p className="text-sm text-[var(--fg-muted)] mb-4">Click on an event to see its response structure.</p>
                           <div className="border border-[var(--border)] rounded-lg overflow-hidden">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-[var(--border)] bg-[var(--bg-soft)]">
-                                  <th className="text-left p-3 font-medium text-[var(--fg-muted)]">Event</th>
-                                  <th className="text-left p-3 font-medium text-[var(--fg-muted)]">Description</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-[var(--border)]">
-                                {[
-                                  { event: "connected", desc: "Successfully authenticated" },
-                                  { event: "pong", desc: "Response to ping" },
-                                  { event: "quote_created", desc: "New quote created" },
-                                  { event: "quote_expired", desc: "Quote TTL expired" },
-                                  { event: "swap_submitted", desc: "Swap request received" },
-                                  { event: "swap_verifying", desc: "Verifying deposit" },
-                                  { event: "swap_verified", desc: "Deposit confirmed" },
-                                  { event: "swap_completed", desc: "Payout successful" },
-                                  { event: "swap_failed", desc: "Swap failed" },
-                                  { event: "refund_initiated", desc: "Refund started" },
-                                  { event: "refund_completed", desc: "Refund sent" },
-                                ].map((item) => (
-                                  <tr key={item.event}>
-                                    <td className="p-3 font-mono text-[var(--aqua)]">{item.event}</td>
-                                    <td className="p-3 text-[var(--fg-muted)]">{item.desc}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Event Examples</h3>
-                          <div className="space-y-4">
-                            <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-2">Quote created</p>
-                              <CodeBlock theme={theme} code={`{
-  "type": "quote_created",
-  "timestamp": 1702312345.123,
-  "order_id": "ord_abc123xyz",
-  "from_token": "CC",
-  "to_token": "CBTC",
-  "amount_in": "10000",
-  "amount_out": "0.00803",
-  "spread_bps": 5.0,
-  "expires_at": 1702312375
-}`} language="json" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-2">Swap completed</p>
-                              <CodeBlock theme={theme} code={`{
-  "type": "swap_completed",
-  "timestamp": 1702312360.123,
-  "order_id": "ord_abc123xyz",
-  "tx_hash_out": "1220def456789abc...",
-  "amount_out": "0.00803",
-  "to_wallet": "f057be3ea9bb...::1220receiver..."
-}`} language="json" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-2">Swap failed</p>
-                              <CodeBlock theme={theme} code={`{
-  "type": "swap_failed",
-  "timestamp": 1702312360.123,
-  "order_id": "ord_abc123xyz",
-  "error": "VERIFICATION_FAILED",
-  "message": "Amount mismatch",
-  "stage": "verification"
-}`} language="json" />
-                            </div>
-                            <div>
-                              <p className="text-sm text-[var(--fg-dim)] mb-2">Refund completed</p>
-                              <CodeBlock theme={theme} code={`{
-  "type": "refund_completed",
-  "timestamp": 1702312370.123,
-  "order_id": "ord_abc123xyz",
-  "tx_hash_refund": "1220987654321fed...",
-  "amount": "9999.5"
-}`} language="json" />
-                            </div>
+                            {wsEvents.map((item, idx) => (
+                              <div key={item.event}>
+                                <button
+                                  onClick={() => toggleEventExpanded(item.event)}
+                                  className={`w-full flex items-center justify-between p-3 text-left hover:bg-[var(--bg-soft)] transition-colors ${
+                                    idx > 0 ? 'border-t border-[var(--border)]' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <code className="font-mono text-sm text-[var(--aqua)]">{item.event}</code>
+                                    <span className="text-sm text-[var(--fg-muted)]">{item.desc}</span>
+                                  </div>
+                                  <svg 
+                                    className={`w-4 h-4 text-[var(--fg-dim)] transition-transform duration-200 ${
+                                      expandedEvents.has(item.event) ? 'rotate-180' : ''
+                                    }`}
+                                    fill="none" 
+                                    viewBox="0 0 24 24" 
+                                    stroke="currentColor"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                                <AnimatePresence>
+                                  {expandedEvents.has(item.event) && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="overflow-hidden border-t border-[var(--border)]"
+                                    >
+                                      <div className="p-3">
+                                        <CodeBlock theme={theme} code={item.example} language="json" />
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -1123,16 +1229,20 @@ def on_message(ws, message):
               f"{data['amount_in']} {data['from_token']} → "
               f"{data['amount_out']} {data['to_token']}")
     elif event_type == "swap_verified":
-        print(f"Swap {data['order_id']} verified")
+        print(f"Swap {data['order_id']} verified: "
+              f"received {data['amount_received']} "
+              f"{data['token_received']}")
     elif event_type == "swap_completed":
         print(f"Swap {data['order_id']} complete!")
-        print(f"Tx: {data['tx_hash_out']}")
+        print(f"Sent {data['amount_out']} {data['token_out']} "
+              f"to {data['wallet_out']}")
     elif event_type == "swap_failed":
         print(f"Swap {data['order_id']} failed: "
               f"{data['message']}")
     elif event_type == "refund_completed":
-        print(f"Refund sent: {data['amount']}")
-        print(f"Tx: {data['tx_hash_refund']}")
+        print(f"Refund complete for {data['order_id']}")
+        print(f"Sent {data['amount_out']} {data['token_out']} "
+              f"to {data['wallet_out']}")
 
 def on_open(ws):
     # Optionally subscribe to wallet updates
