@@ -393,13 +393,13 @@ print(f"{data['symbol']}: \${data['price']}")`
       { name: "from_token", type: "string", required: true, description: "CBTC or CC" },
       { name: "to_token", type: "string", required: true, description: "CBTC or CC" },
       { name: "amount", type: "string", required: true, description: "Amount to sell" },
-      { name: "max_slippage_bps", type: "integer", description: "Max slippage in bps (default: 50)" }
+      { name: "max_spread_bps", type: "integer", description: "Max spread in bps (default: 50)" }
     ],
     requestBody: `{
   "from_token": "CC",
   "to_token": "CBTC",
   "amount": "100000",
-  "max_slippage_bps": 50
+  "max_spread_bps": 50
 }`,
     response: `{
   "order_id": "ord_abc123xyz",
@@ -408,7 +408,7 @@ print(f"{data['symbol']}: \${data['price']}")`
   "amount_in": "100000",
   "amount_out": "0.0756",
   "price": "1322751.32",
-  "slippage_bps": 15,
+  "spread_bps": 15,
   "usd_value": "7353.00",
   "payment_address": "0x7890...",
   "expires_in": 60,
@@ -416,7 +416,7 @@ print(f"{data['symbol']}: \${data['price']}")`
 }`,
     errors: [
       { title: "Insufficient liquidity", code: `{ "error": "INSUFFICIENT_LIQUIDITY" }` },
-      { title: "Slippage exceeded", code: `{ "error": "SLIPPAGE_EXCEEDS_LIMIT" }` }
+      { title: "Spread exceeded", code: `{ "error": "SPREAD_EXCEEDS_LIMIT" }` }
     ],
     pythonExample: `import requests
 
@@ -429,7 +429,7 @@ response = requests.post(
         "from_token": "CC",
         "to_token": "CBTC",
         "amount": "100000",
-        "max_slippage_bps": 50
+        "max_spread_bps": 50
     }
 )
 
@@ -441,33 +441,34 @@ print(f"Receive: {quote['amount_out']} CBTC")`
     description: "Request quotes for multiple swaps in a single request. Maximum 10 orders per request.",
     parameters: [
       { name: "orders", type: "array", required: true, description: "Array of orders (max 10)" },
-      { name: "max_slippage_bps", type: "integer", description: "Max slippage for all" }
+      { name: "max_spread_bps", type: "integer", description: "Max spread in bps (default: 50)" }
     ],
     requestBody: `{
   "orders": [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
+    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
   ],
-  "max_slippage_bps": 50
+  "max_spread_bps": 50
 }`,
     response: `{
   "order_id": "ord_multi_abc123xyz",
   "orders": [
-    { "index": 0, "amount_out": "0.0756", "slippage_bps": 3, "payment_address": "0x7890..." },
-    { "index": 1, "amount_out": "68027.21", "slippage_bps": 5, "payment_address": "0x7891..." }
+    { "index": 0, "amount_out": "0.0756", "spread_bps": 3, "payment_address": "0x7890..." },
+    { "index": 1, "amount_out": "100000", "spread_bps": 3, "payment_address": "0x7891..." }
   ],
-  "total_usd_value": "12353.00",
+  "total_usd_value": "14706.00",
   "expires_in": 60
 }`,
     errors: [
       { title: "Insufficient liquidity", code: `{ "error": "INSUFFICIENT_LIQUIDITY", "index": 0 }` },
-      { title: "Slippage exceeded", code: `{ "error": "SLIPPAGE_EXCEEDS_LIMIT", "index": 1 }` }
+      { title: "Spread exceeded", code: `{ "error": "SPREAD_EXCEEDS_LIMIT", "index": 1 }` }
     ],
     pythonExample: `import requests
 
+# Balanced pair: CC→CBTC and CBTC→CC with matching USD values
 orders = [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
+    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
 ]
 
 response = requests.post(
@@ -477,7 +478,7 @@ response = requests.post(
     },
     json={
         "orders": orders,
-        "max_slippage_bps": 50
+        "max_spread_bps": 50
     }
 )
 
@@ -633,7 +634,7 @@ for quote in data["quotes"]:
   "amount_in": "100000",
   "amount_out": "0.0756",
   "price": "1322751.32",
-  "slippage_bps": 15,
+  "spread_bps": 15,
   "payment_address": "0x7890...",
   "expires_at": 1702312405
 }`,

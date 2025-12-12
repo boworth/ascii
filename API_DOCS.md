@@ -108,7 +108,7 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
 | from_token | string | Yes | CBTC or CC |
 | to_token | string | Yes | CBTC or CC |
 | amount | string | Yes | Amount to sell |
-| max_slippage_bps | integer | No | Max slippage in bps (default: 50) |
+| max_spread_bps | integer | No | Max spread in bps (default: 50) |
 
 **Request Body:**
 
@@ -117,7 +117,7 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
   "from_token": "CC",
   "to_token": "CBTC",
   "amount": "100000",
-  "max_slippage_bps": 50
+  "max_spread_bps": 50
 }
 ```
 
@@ -131,7 +131,7 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
   "amount_in": "100000",
   "amount_out": "0.0756",
   "price": "1322751.32",
-  "slippage_bps": 15,
+  "spread_bps": 15,
   "usd_value": "7353.00",
   "payment_address": "0x7890...",
   "expires_in": 60,
@@ -146,9 +146,9 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
   { "error": "INSUFFICIENT_LIQUIDITY" }
   ```
 
-- Slippage exceeded:
+- Spread exceeded:
   ```json
-  { "error": "SLIPPAGE_EXCEEDS_LIMIT" }
+  { "error": "SPREAD_EXCEEDS_LIMIT" }
   ```
 
 **Python Example:**
@@ -165,7 +165,7 @@ response = requests.post(
         "from_token": "CC",
         "to_token": "CBTC",
         "amount": "100000",
-        "max_slippage_bps": 50
+        "max_spread_bps": 50
     }
 )
 
@@ -185,7 +185,7 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | orders | array | Yes | Array of orders (max 10) |
-| max_slippage_bps | integer | No | Max slippage for all |
+| max_spread_bps | integer | No | Max spread in bps (default: 50) |
 
 **Request Body:**
 
@@ -193,9 +193,9 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
 {
   "orders": [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
+    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
   ],
-  "max_slippage_bps": 50
+  "max_spread_bps": 50
 }
 ```
 
@@ -205,10 +205,10 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
 {
   "order_id": "ord_multi_abc123xyz",
   "orders": [
-    { "index": 0, "amount_out": "0.0756", "slippage_bps": 3, "payment_address": "0x7890..." },
-    { "index": 1, "amount_out": "68027.21", "slippage_bps": 5, "payment_address": "0x7891..." }
+    { "index": 0, "amount_out": "0.0756", "spread_bps": 3, "payment_address": "0x7890..." },
+    { "index": 1, "amount_out": "100000", "spread_bps": 3, "payment_address": "0x7891..." }
   ],
-  "total_usd_value": "12353.00",
+  "total_usd_value": "14706.00",
   "expires_in": 60
 }
 ```
@@ -220,9 +220,9 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
   { "error": "INSUFFICIENT_LIQUIDITY", "index": 0 }
   ```
 
-- Slippage exceeded:
+- Spread exceeded:
   ```json
-  { "error": "SLIPPAGE_EXCEEDS_LIMIT", "index": 1 }
+  { "error": "SPREAD_EXCEEDS_LIMIT", "index": 1 }
   ```
 
 **Python Example:**
@@ -230,9 +230,10 @@ Request quotes for multiple swaps in a single request. Maximum 10 orders per req
 ```python
 import requests
 
+# Balanced pair: CC→CBTC and CBTC→CC with matching USD values
 orders = [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
+    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
 ]
 
 response = requests.post(
@@ -242,7 +243,7 @@ response = requests.post(
     },
     json={
         "orders": orders,
-        "max_slippage_bps": 50
+        "max_spread_bps": 50
     }
 )
 
@@ -495,7 +496,7 @@ Get detailed information about a specific quote.
   "amount_in": "100000",
   "amount_out": "0.0756",
   "price": "1322751.32",
-  "slippage_bps": 15,
+  "spread_bps": 15,
   "payment_address": "0x7890...",
   "expires_at": 1702312405
 }
