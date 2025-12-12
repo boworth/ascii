@@ -446,17 +446,17 @@ print(f"Receive: {quote['amount_out']} CBTC")`
     requestBody: `{
   "orders": [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
+    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
   ],
   "max_spread_bps": 50
 }`,
     response: `{
   "order_id": "ord_multi_abc123xyz",
   "orders": [
-    { "index": 0, "amount_out": "0.0756", "spread_bps": 3, "payment_address": "0x7890..." },
-    { "index": 1, "amount_out": "100000", "spread_bps": 3, "payment_address": "0x7891..." }
+    { "index": 0, "amount_out": "0.0756", "spread_bps": 15, "payment_address": "0x7890..." },
+    { "index": 1, "amount_out": "0.0378", "spread_bps": 15, "payment_address": "0x7891..." }
   ],
-  "total_usd_value": "14706.00",
+  "total_usd_value": "11029.50",
   "expires_in": 60
 }`,
     errors: [
@@ -465,10 +465,9 @@ print(f"Receive: {quote['amount_out']} CBTC")`
     ],
     pythonExample: `import requests
 
-# Balanced pair: CC→CBTC and CBTC→CC with matching USD values
 orders = [
     { "from_token": "CC", "to_token": "CBTC", "amount": "100000" },
-    { "from_token": "CBTC", "to_token": "CC", "amount": "0.0756" }
+    { "from_token": "CC", "to_token": "CBTC", "amount": "50000" }
 ]
 
 response = requests.post(
