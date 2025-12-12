@@ -233,6 +233,27 @@ html, body {
               box-shadow 0.5s ease !important;
 }
 
+/* Custom selection colors for docs page */
+.docs-selection::selection {
+  background-color: #4a4a4a;
+  color: inherit;
+}
+
+.docs-selection *::selection {
+  background-color: #4a4a4a;
+  color: inherit;
+}
+
+.docs-selection-light::selection {
+  background-color: #c0c0c0;
+  color: inherit;
+}
+
+.docs-selection-light *::selection {
+  background-color: #c0c0c0;
+  color: inherit;
+}
+
 /* Cursor-Reactive Swap Button with Three Vertical Gradient Sections */
 .swap-btn-reactive {
   position: relative;

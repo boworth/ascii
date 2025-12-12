@@ -14,9 +14,17 @@ let priceCache = {
 
 export async function POST(request: Request) {
   try {
-    // Simple API key authentication
+    // Simple API key authentication - MUST be set in environment
     const authHeader = request.headers.get('authorization')
-    const apiKey = process.env.PRICE_UPDATE_API_KEY || 'your-secret-key-here'
+    const apiKey = process.env.PRICE_UPDATE_API_KEY
+    
+    if (!apiKey) {
+      console.error('PRICE_UPDATE_API_KEY not configured')
+      return NextResponse.json(
+        { error: 'Service not configured' },
+        { status: 503 }
+      )
+    }
     
     if (authHeader !== `Bearer ${apiKey}`) {
       return NextResponse.json(

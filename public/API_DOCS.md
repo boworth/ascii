@@ -5,7 +5,7 @@ Proprietary RFQ system for trading digital assets on the Canton Network. Get rea
 ## Base URL
 
 ```
-https://trngle.xyz/v1
+https://api.trngle.xyz/v1
 ```
 
 ## Authentication
@@ -42,7 +42,7 @@ Returns current mid prices for all supported assets.
 import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/prices",
+    "https://api.trngle.xyz/v1/prices",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -83,7 +83,7 @@ import requests
 symbol = "CBTC"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/prices/{symbol}",
+    f"https://api.trngle.xyz/v1/prices/{symbol}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -157,7 +157,7 @@ Request a quote for swapping one token for another. Quotes are valid for 60 seco
 import requests
 
 response = requests.post(
-    "https://trngle.xyz/v1/quote",
+    "https://api.trngle.xyz/v1/quote",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -236,7 +236,7 @@ orders = [
 ]
 
 response = requests.post(
-    "https://trngle.xyz/v1/multi-quote",
+    "https://api.trngle.xyz/v1/multi-quote",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -312,7 +312,7 @@ Execute a quoted order. Send the amount_in to the payment_address from the quote
 import requests
 
 response = requests.post(
-    "https://trngle.xyz/v1/swap",
+    "https://api.trngle.xyz/v1/swap",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -410,7 +410,7 @@ transactions = [
 ]
 
 response = requests.post(
-    "https://trngle.xyz/v1/multi-swap",
+    "https://api.trngle.xyz/v1/multi-swap",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -457,7 +457,7 @@ List all quotes for your API key.
 import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/quotes",
+    "https://api.trngle.xyz/v1/quotes",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -509,7 +509,7 @@ import requests
 order_id = "ord_abc123xyz"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/quotes/{order_id}",
+    f"https://api.trngle.xyz/v1/quotes/{order_id}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -551,7 +551,7 @@ List all swaps for your API key.
 import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/swaps",
+    "https://api.trngle.xyz/v1/swaps",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -602,7 +602,7 @@ import requests
 order_id = "ord_abc123xyz"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/swaps/{order_id}",
+    f"https://api.trngle.xyz/v1/swaps/{order_id}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -624,7 +624,7 @@ Connect to receive real-time order updates. The WebSocket provides push notifica
 **URL:**
 
 ```
-wss://trngle.xyz/v1/ws?api_key=your_key
+wss://api.trngle.xyz/v1/ws?api_key=your_key
 ```
 
 **Client Commands:**
@@ -807,7 +807,7 @@ def on_open(ws):
     }))
 
 ws = websocket.WebSocketApp(
-    "wss://trngle.xyz/v1/ws?api_key=your_key",
+    "wss://api.trngle.xyz/v1/ws?api_key=your_key",
     on_message=on_message,
     on_open=on_open
 )

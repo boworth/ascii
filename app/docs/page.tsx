@@ -2,7 +2,7 @@
 
 import { useState, type MouseEvent, type FormEvent } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ThemeProvider, useTheme } from "../wallet/ThemeContext"
+import { ThemeProvider, useTheme } from "../context/ThemeContext"
 import { CodeBlock } from "./components/CodeBlock"
 import * as React from 'react'
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -31,23 +31,47 @@ function ContactModal({
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Simulate submission - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setIsSubmitting(false)
-    setSubmitted(true)
-    
-    // Reset after showing success
-    setTimeout(() => {
-      setSubmitted(false)
-      onClose()
-      setEmail('')
-      setCompanyName('')
-      setFirstName('')
-      setLastName('')
-      setInfo('')
-      setTelegram('')
-    }, 2000)
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountType,
+          email,
+          companyName: accountType === 'company' ? companyName : undefined,
+          firstName: accountType === 'individual' ? firstName : undefined,
+          lastName: accountType === 'individual' ? lastName : undefined,
+          info,
+          telegram: telegram || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit request')
+      }
+
+      setIsSubmitting(false)
+      setSubmitted(true)
+      
+      // Reset after showing success
+      setTimeout(() => {
+        setSubmitted(false)
+        onClose()
+        setEmail('')
+        setCompanyName('')
+        setFirstName('')
+        setLastName('')
+        setInfo('')
+        setTelegram('')
+      }, 2000)
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      setIsSubmitting(false)
+      // You could add error state handling here
+      alert('Failed to submit request. Please try again.')
+    }
   }
 
   if (!isOpen) return null
@@ -355,7 +379,7 @@ const endpointData: Record<string, {
     pythonExample: `import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/prices",
+    "https://api.trngle.xyz/v1/prices",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -380,7 +404,7 @@ print(f"CC: \${prices['CC']}")`
 symbol = "CBTC"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/prices/{symbol}",
+    f"https://api.trngle.xyz/v1/prices/{symbol}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -423,7 +447,7 @@ print(f"{data['symbol']}: \${data['price']}")`
     pythonExample: `import requests
 
 response = requests.post(
-    "https://trngle.xyz/v1/quote",
+    "https://api.trngle.xyz/v1/quote",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -473,7 +497,7 @@ orders = [
 ]
 
 response = requests.post(
-    "https://trngle.xyz/v1/multi-quote",
+    "https://api.trngle.xyz/v1/multi-quote",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -514,7 +538,7 @@ print(f"Total: \${quote['total_usd_value']}")`
     pythonExample: `import requests
 
 response = requests.post(
-    "https://trngle.xyz/v1/swap",
+    "https://api.trngle.xyz/v1/swap",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -579,7 +603,7 @@ transactions = [
 ]
 
 response = requests.post(
-    "https://trngle.xyz/v1/multi-swap",
+    "https://api.trngle.xyz/v1/multi-swap",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -608,7 +632,7 @@ print(f"Status: {result['status']}")`
     pythonExample: `import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/quotes",
+    "https://api.trngle.xyz/v1/quotes",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -644,7 +668,7 @@ for quote in data["quotes"]:
 order_id = "ord_abc123xyz"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/quotes/{order_id}",
+    f"https://api.trngle.xyz/v1/quotes/{order_id}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -670,7 +694,7 @@ print(f"Amount out: {quote['amount_out']}")`
     pythonExample: `import requests
 
 response = requests.get(
-    "https://trngle.xyz/v1/swaps",
+    "https://api.trngle.xyz/v1/swaps",
     headers={
         "X-API-Key": "your_api_key"
     },
@@ -705,7 +729,7 @@ for swap in data["swaps"]:
 order_id = "ord_abc123xyz"
 
 response = requests.get(
-    f"https://trngle.xyz/v1/swaps/{order_id}",
+    f"https://api.trngle.xyz/v1/swaps/{order_id}",
     headers={
         "X-API-Key": "your_api_key"
     }
@@ -931,7 +955,7 @@ function DocsPageContent() {
 
   return (
     <main 
-      className={`theme-transition relative h-screen flex flex-col select-none overflow-hidden p-4 md:p-12 ${
+      className={`theme-transition relative h-screen flex flex-col overflow-hidden p-4 md:p-12 ${
         theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-gray-100'
       }`}
       onMouseMove={handleMouseMove}
@@ -1041,7 +1065,7 @@ function DocsPageContent() {
                     : 'bg-white border-gray-200'
                 }`}
               >
-                <div className="p-8 overflow-y-auto h-full">
+                <div className="p-8 overflow-y-auto h-full select-none">
                   {/* Header */}
                   <div className="mb-8">
                     <h1 className={`text-5xl font-bold transition-colors ${
@@ -1062,9 +1086,9 @@ function DocsPageContent() {
                     <span className={`text-xs uppercase tracking-wider ${
                       theme === 'dark' ? 'text-zinc-500' : 'text-gray-500'
                     }`}>Base URL</span>
-                    <p className={`font-mono text-sm mt-1 ${
-                      theme === 'dark' ? 'text-zinc-400' : 'text-gray-600'
-                    }`}>https://trngle.xyz/v1</p>
+                    <p className={`font-mono text-sm mt-1 select-text ${
+                      theme === 'dark' ? 'text-zinc-400 docs-selection' : 'text-gray-600 docs-selection-light'
+                    }`}>https://api.trngle.xyz/v1</p>
                   </div>
 
                   {/* Navigation */}
@@ -1118,7 +1142,7 @@ function DocsPageContent() {
 
           {/* Left Sidebar - Navigation (Desktop only) */}
           {isMobile === false && (
-            <div className={`w-80 flex-shrink-0 border-r overflow-y-auto ${
+            <div className={`w-80 flex-shrink-0 border-r overflow-y-auto select-none ${
               theme === 'dark' ? 'border-[#2a2a2a]' : 'border-gray-200'
             }`}>
               <div className="p-8">
@@ -1140,7 +1164,7 @@ function DocsPageContent() {
                 {/* Base URL */}
                 <div className="mb-8">
                   <span className="text-xs text-[var(--fg-dim)] uppercase tracking-wider">Base URL</span>
-                  <p className="font-mono text-sm mt-1 text-[var(--fg-muted)]">https://trngle.xyz/v1</p>
+                  <p className={`font-mono text-sm mt-1 text-[var(--fg-muted)] select-text ${theme === 'dark' ? 'docs-selection' : 'docs-selection-light'}`}>https://api.trngle.xyz/v1</p>
                 </div>
 
                 {/* Navigation */}
@@ -1180,7 +1204,7 @@ function DocsPageContent() {
           )}
 
           {/* Right Content Area */}
-          <div className="flex-1 relative overflow-hidden min-h-0">
+          <div className={`flex-1 relative overflow-hidden min-h-0 ${theme === 'dark' ? 'docs-selection' : 'docs-selection-light'}`}>
             <AnimatePresence mode="wait">
               {(!selectedEndpoint || selectedEndpoint === 'info') ? (
                 /* Welcome/Auth Info */
@@ -1190,7 +1214,7 @@ function DocsPageContent() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full flex items-center justify-center p-6 pt-20 md:p-12"
+                  className="h-full flex items-center justify-center p-6 pt-20 md:p-12 select-none"
                 >
                   <div className="max-w-xl text-center">
                     <h2 className="text-3xl font-semibold text-[var(--fg)] mb-4">TRNG.le API</h2>
@@ -1263,8 +1287,8 @@ function DocsPageContent() {
 
                     {/* URL - Full Width */}
                     <div className="mb-8">
-                      <span className="text-sm text-[var(--fg-dim)] uppercase tracking-wider">URL</span>
-                      <p className="font-mono text-base mt-2 text-[var(--fg)]">wss://trngle.xyz/v1/ws?api_key=your_key</p>
+                      <span className="text-sm text-[var(--fg-dim)] uppercase tracking-wider select-none">URL</span>
+                      <p className="font-mono text-base mt-2 text-[var(--fg)]">wss://api.trngle.xyz/v1/ws?api_key=your_key</p>
                     </div>
 
                     {/* Two Column Layout */}
@@ -1272,7 +1296,7 @@ function DocsPageContent() {
                       {/* Left Column - Commands & Events */}
                       <div className="flex-1 min-w-0 space-y-8">
                         <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Client Commands</h3>
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">Client Commands</h3>
                           <div className="space-y-3">
                             <div>
                               <p className="text-sm text-[var(--fg-dim)] mb-2">Ping (keep-alive)</p>
@@ -1290,7 +1314,7 @@ function DocsPageContent() {
                         </div>
 
                         <div>
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">Server Events</h3>
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">Server Events</h3>
                           <p className="text-sm text-[var(--fg-muted)] mb-4">Click on an event to see its response structure.</p>
                           <div className="border border-[var(--border)] rounded-lg overflow-hidden">
                             {wsEvents.map((item, idx) => (
@@ -1339,7 +1363,7 @@ function DocsPageContent() {
 
                       {/* Right Column - Python Example */}
                       <div className="w-full lg:w-[650px] flex-shrink-0">
-                        <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2 select-none">
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
                           </svg>
@@ -1382,7 +1406,7 @@ def on_open(ws):
     }))
 
 ws = websocket.WebSocketApp(
-    "wss://trngle.xyz/v1/ws?api_key=your_key",
+    "wss://api.trngle.xyz/v1/ws?api_key=your_key",
     on_message=on_message,
     on_open=on_open
 )
@@ -1402,12 +1426,12 @@ ws.run_forever()`} language="python" />
                   className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div className="max-w-3xl">
-                    <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6">Error Codes</h2>
+                    <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6 select-none">Error Codes</h2>
                     
                     <div className="border border-[var(--border)] rounded-lg overflow-x-auto">
                       <table className="w-full min-w-[500px]">
                         <thead>
-                          <tr className="border-b border-[var(--border)] bg-[var(--bg-soft)]">
+                          <tr className="border-b border-[var(--border)] bg-[var(--bg-soft)] select-none">
                             <th className="text-left p-4 font-medium text-[var(--fg-muted)]">Code</th>
                             <th className="text-left p-4 font-medium text-[var(--fg-muted)]">Status</th>
                             <th className="text-left p-4 font-medium text-[var(--fg-muted)]">Description</th>
@@ -1443,7 +1467,7 @@ ws.run_forever()`} language="python" />
                   className="h-full overflow-y-auto p-6 pt-20 md:p-12"
                 >
                   <div className="max-w-3xl">
-                    <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6">Rate Limits</h2>
+                    <h2 className="text-2xl font-semibold text-[var(--fg)] mb-6 select-none">Rate Limits</h2>
                     
                     <div className="space-y-3">
                       {[
@@ -1486,7 +1510,7 @@ ws.run_forever()`} language="python" />
                     {/* Parameters - Full Width */}
                     {selectedData.parameters && selectedData.parameters.length > 0 && (
                       <div className="mb-8">
-                        <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">
+                        <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">
                           Parameters
                         </h3>
                         <div className="space-y-3">
@@ -1513,7 +1537,7 @@ ws.run_forever()`} language="python" />
                         {/* Request Body */}
                         {selectedData.requestBody && (
                           <div>
-                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">
+                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">
                               Request Body
                             </h3>
                             <CodeBlock theme={theme} code={selectedData.requestBody} language="json" />
@@ -1523,7 +1547,7 @@ ws.run_forever()`} language="python" />
                         {/* Response */}
                         {selectedData.response && (
                           <div>
-                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">
+                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">
                               Response
                             </h3>
                             <CodeBlock theme={theme} code={selectedData.response} language="json" />
@@ -1533,7 +1557,7 @@ ws.run_forever()`} language="python" />
                         {/* Errors */}
                         {selectedData.errors && selectedData.errors.length > 0 && (
                           <div>
-                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4">
+                            <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 select-none">
                               Errors
                             </h3>
                             <div className="space-y-4">
@@ -1551,7 +1575,7 @@ ws.run_forever()`} language="python" />
                       {/* Right Column - Python Example */}
                       {selectedData.pythonExample && (
                         <div className="w-full lg:w-[650px] flex-shrink-0">
-                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <h3 className="text-sm font-medium text-[var(--fg-dim)] uppercase tracking-wider mb-4 flex items-center gap-2 select-none">
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
                             </svg>
